@@ -23,7 +23,7 @@ export function QuotePanel() {
         <button onClick={() => setActive(index)}><span>0{index + 1}</span><strong>{plan.name}</strong><b>{plan.price}</b></button>
         <div className="quote-plan-detail"><div><em>{plan.rate}</em><small>{plan.unit}</small></div><ul>{plan.features.map((feature) => <li key={feature}><Check size={15} />{feature}</li>)}</ul></div>
       </article>)}</div>
-      <aside className="quote-contact"><div className="quote-pavilion"><img src="/ink/house.png" alt="" /></div><div className="quote-qr"><img src="/brand/wechat-qr.png" alt="万象元生微信咨询二维码" /></div><strong>扫码获取定制化方案</strong><a href={`tel:${siteConfig.phone}`}><Phone size={15}/>{siteConfig.phone}</a><a href={`mailto:${siteConfig.email}`}><Mail size={15}/>{siteConfig.email}</a></aside>
+      <aside className="quote-contact"><div className="quote-pavilion"><img src="/ink/right1.png" alt="" /></div><div className="quote-qr"><img src="/brand/wechat-qr.png" alt="万象元生微信咨询二维码" /></div><strong>扫码获取定制化方案</strong><a href={`tel:${siteConfig.phone}`}><Phone size={15}/>{siteConfig.phone}</a><a href={`mailto:${siteConfig.email}`}><Mail size={15}/>{siteConfig.email}</a></aside>
     </section>
   </div>;
 }

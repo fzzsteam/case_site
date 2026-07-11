@@ -50,6 +50,7 @@ export function HomeExperience() {
       if (reduce) return;
       gsap.timeline({ defaults: { ease: "power3.out" } })
         .from(".hero-far", { yPercent: -6, scale: .97, duration: 1.7 })
+        .from(".hero-back-scene", { yPercent: 5, scale: .98, duration: 1.65 }, "-=1.45")
         .from(".hero-mid-ridge-left", { xPercent: -10, duration: 1.55 }, "-=1.35")
         .from(".hero-mid-ridge-right", { xPercent: 10, duration: 1.55 }, "<")
         .from(".hero-mountain-left", { xPercent: -14, duration: 1.5 }, "-=1.25")
@@ -69,11 +70,12 @@ export function HomeExperience() {
   return <div ref={root} className="scroll-story">
     <section id="home" className="hero-chapter story-chapter">
       <div className="hero-paper" />
-      <img className="hero-layer hero-far" src="/ink/mou1.png" alt="" />
-      <img className="hero-layer hero-mid-ridge hero-mid-ridge-left" src="/ink/mou2.png" alt="" />
-      <div className="hero-layer hero-mid-ridge hero-mid-ridge-right"><img src="/ink/mou3.png" alt="" /></div>
-      <img className="hero-layer hero-mountain-left" src="/ink/tree.png" alt="" />
-      <img className="hero-layer hero-mountain-right" src="/ink/mou4.png" alt="" />
+      <img className="hero-layer hero-far" src="/ink/back2.png" alt="" />
+      <img className="hero-layer hero-back-scene" src="/ink/back1.png" alt="" />
+      <img className="hero-layer hero-mid-ridge hero-mid-ridge-left" src="/ink/left2.png" alt="" />
+      <img className="hero-layer hero-mid-ridge hero-mid-ridge-right" src="/ink/right2.png" alt="" />
+      <img className="hero-layer hero-mountain-left" src="/ink/left1.png" alt="" />
+      <img className="hero-layer hero-mountain-right" src="/ink/right1.png" alt="" />
       <InkClouds className="hero-layer cloud-back" />
       <InkClouds className="hero-layer cloud-front" />
       <InkBirds />
@@ -92,7 +94,7 @@ export function HomeExperience() {
     </section>
 
     <section id="about" className="about-chapter story-chapter">
-      <img className="about-landscape" src="/ink/mou3.png" alt="" />
+      <img className="about-landscape" src="/ink/back1.png" alt="" />
       <header className="chapter-heading about-heading"><span>SERVICES</span><h2>文旅影像与<br/>数字内容服务</h2><p>从内容策划、AIGC 影像制作到项目交付与长期运营。</p></header>
       <div className="service-nodes">{serviceItems.map(({title,icon:Icon}, index)=><article className="service-node" key={title}><span>0{index+1}</span><Icon/><h3>{title}</h3></article>)}</div>
       <div className="about-method"><h3>从理解开始，到传播发生</h3><div className="process-river">{processSteps.map((step,index)=><article className="process-node" key={step}><i>{String(index+1).padStart(2,"0")}</i><strong>{step}</strong></article>)}</div></div>
