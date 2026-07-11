@@ -1,15 +1,23 @@
-export type CaseCategory = "城市文旅" | "文博数字化" | "文化短片" | "品牌宣传";
-
+export type CaseCategory = "宣传片" | "广告片" | "短剧";
+export type Episode = { title: string; videoPath: string | null };
 export type CaseStudy = {
-  slug: string; title: string; summary: string; description: string; category: CaseCategory;
-  services: string[]; coverPath: string; videoPath: string; publishedAt: string; featured: boolean;
+  slug: string;
+  title: string;
+  category: CaseCategory;
+  summary: string;
+  coverPath: string | null;
+  episodes: Episode[];
 };
 
 export const caseStudies: CaseStudy[] = [
-  { slug: "nanyang-museum", title: "南阳汉画馆", summary: "让千年汉画在数字光影中重新苏醒。", description: "以汉画像石的视觉语言为原点，通过 AIGC 动态重构历史场景，让文物故事更容易被当代观众理解与传播。", category: "文博数字化", services: ["脚本策划", "AI 影像", "后期制作"], coverPath: "cases/nanyang/cover.webp", videoPath: "cases/nanyang/film.mp4", publishedAt: "2026-04-18", featured: true },
-  { slug: "sudongpo-litchi", title: "苏东坡的荔枝狂想", summary: "传统人物与岭南风物的轻叙事碰撞。", description: "围绕苏东坡与岭南荔枝展开系列创意短片，用年轻化表达连接古典文化和城市旅游场景。", category: "文化短片", services: ["创意策划", "角色生成", "系列短片"], coverPath: "cases/sudongpo/cover.webp", videoPath: "cases/sudongpo/film.mp4", publishedAt: "2026-03-12", featured: true },
-  { slug: "homecoming", title: "回家", summary: "以温暖科技讲述春节归家的情感。", description: "为智能陪伴产品打造的新年品牌影片，以家庭情绪为主线，将产品能力自然融入叙事。", category: "品牌宣传", services: ["TVC 策划", "AI 制作", "声音设计"], coverPath: "cases/homecoming/cover.webp", videoPath: "cases/homecoming/film.mp4", publishedAt: "2026-02-01", featured: true },
-  { slug: "meet-nande", title: "南得遇见你", summary: "一座城市在山水和人文之间徐徐展开。", description: "以城市漫游视角建立文旅形象，用诗意镜头串联地标、风物与生活现场。", category: "城市文旅", services: ["城市宣传", "AI 视觉", "剪辑包装"], coverPath: "cases/nande/cover.webp", videoPath: "cases/nande/film.mp4", publishedAt: "2026-01-15", featured: false },
+  { slug: "meet-nande", title: "南得遇见你", category: "宣传片", summary: "一座城市在山水与人文之间徐徐展开。", coverPath: null, episodes: [{ title: "正片", videoPath: null }] },
+  { slug: "crazy-litchi", title: "疯狂的荔枝", category: "短剧", summary: "岭南风物与年轻叙事碰撞出的文化短剧。", coverPath: null, episodes: [{ title: "第一集", videoPath: null }] },
+  { slug: "sudongpo-liurong", title: "苏东坡与六榕寺", category: "宣传片", summary: "循着历史人物的足迹重新看见城市文化。", coverPath: null, episodes: [{ title: "正片", videoPath: null }] },
+  { slug: "sudongpo-commerce", title: "苏东坡带货视频", category: "广告片", summary: "古典人物走入当代消费语境的创意广告。", coverPath: null, episodes: [{ title: "横屏版", videoPath: null }, { title: "竖屏版", videoPath: null }] },
+  { slug: "sudongpo-litchi", title: "苏东坡的荔枝狂想", category: "宣传片", summary: "以诗意想象连接苏东坡与岭南荔枝文化。", coverPath: null, episodes: [{ title: "正片", videoPath: null }] },
+  { slug: "homecoming", title: "阳仔 AI 陪伴机新年宣传片", category: "广告片", summary: "用温暖科技讲述春节归家的情感。", coverPath: null, episodes: [{ title: "回家", videoPath: null }] },
+  { slug: "yangzai-tvc", title: "阳仔 AI 陪伴机新年的 TVC", category: "广告片", summary: "陪伴型产品的新年品牌影像表达。", coverPath: null, episodes: [{ title: "新年 TVC", videoPath: null }] },
+  { slug: "yangzai-animation", title: "阳仔 IP 动画视频", category: "广告片", summary: "以动画建立更鲜明、更亲近的品牌角色。", coverPath: null, episodes: [{ title: "动画正片", videoPath: null }] },
 ];
 
 export const getCaseBySlug = (slug: string) => caseStudies.find((item) => item.slug === slug);

@@ -1,6 +1,6 @@
 # 万象元生文旅 AIGC 案例站
 
-基于 Next.js App Router 的文旅视频案例展示站，包含四套水墨分层动效、案例详情 SEO、基础报价和私有阿里云 OSS 媒体访问。
+基于 Next.js App Router 的文旅视频案例展示站。首页是一幅连续滚动长卷，包含动态水墨 Hero、横向电影案例画廊、服务能力与合作流程，以及按钮触发的全屏报价咨询面板。
 
 ## 本地运行
 
@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-访问 `http://localhost:3000`。未配置 OSS 时页面和本地水墨动效正常展示，私有案例封面使用水墨占位，点击视频会显示可重试的不可用状态。
+访问 `http://localhost:3000`。当前案例使用水墨封面和视频占位，不读取本地项目视频；收到正式 OSS 相对路径后再填写媒体字段。
 
 ## OSS 配置
 
@@ -26,13 +26,17 @@ OSS_ACCESS_KEY_SECRET=your-access-key-secret
 
 Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` 同源代理并缓存，视频仅在点击播放后由 `/api/media/video-url` 返回 15 分钟签名 URL。AccessKey 只能设置为服务端环境变量，禁止添加 `NEXT_PUBLIC_` 前缀。
 
-允许的对象前缀为 `cases/` 和 `brand/`。案例配置位于 `content/cases.ts`：
+允许的对象前缀为 `cases/` 和 `brand/`。案例配置位于 `content/cases.ts`，一个项目可以包含多个分集或横竖屏版本：
 
 ```ts
 {
-  slug: "nanyang-museum",
-  coverPath: "cases/nanyang/cover.webp",
-  videoPath: "cases/nanyang/film.mp4"
+  slug: "sudongpo-commerce",
+  category: "广告片",
+  coverPath: null,
+  episodes: [
+    { title: "横屏版", videoPath: null },
+    { title: "竖屏版", videoPath: null }
+  ]
 }
 ```
 
