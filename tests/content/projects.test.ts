@@ -1,8 +1,14 @@
-import { caseStudies } from "@/content/cases";
+import { caseStudies, caseVideos } from "@/content/cases";
 
 it("contains all ten uploaded projects", () => {
   expect(caseStudies).toHaveLength(10);
   expect(caseStudies.map((item) => item.title)).toEqual(expect.arrayContaining(["疯狂的荔枝", "苏东坡的荔枝狂想", "阳仔学英语", "阳光小镇"]));
+});
+
+it("provides one continuous previous and next video sequence", () => {
+  expect(caseVideos).toHaveLength(17);
+  expect(caseVideos[0]).toEqual(expect.objectContaining({ projectTitle: "南得遇见你", orientation: "portrait" }));
+  expect(caseVideos.at(-1)).toEqual(expect.objectContaining({ projectTitle: "阳光小镇", orientation: "landscape" }));
 });
 
 it("maps project episodes to private OSS object keys", () => {

@@ -25,3 +25,10 @@ export const caseStudies: CaseStudy[] = [
 
 export const getCaseBySlug = (slug: string) => caseStudies.find((item) => item.slug === slug);
 export const getCaseSlugs = () => caseStudies.map(({ slug }) => slug);
+export const caseVideos = caseStudies.flatMap((item) => item.episodes.map((episode) => ({
+  ...episode,
+  projectSlug: item.slug,
+  projectTitle: item.title,
+  category: item.category,
+  coverPath: item.coverPath,
+})));

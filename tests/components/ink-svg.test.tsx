@@ -11,6 +11,6 @@ it("renders layered vector clouds without bitmap images", () => {
 
 it("renders distinct flying bird silhouettes", () => {
   const { container } = render(<InkBirds />);
-  expect(container.querySelectorAll(".ink-bird")).toHaveLength(6);
-  expect(container.querySelectorAll(".bird-silhouette")).toHaveLength(3);
+  expect(container.querySelectorAll(".sketch-bird")).toHaveLength(5);
+  expect(container.querySelectorAll(".sketch-wing")).toHaveLength(10);
 });

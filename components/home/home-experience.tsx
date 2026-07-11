@@ -1,9 +1,9 @@
 "use client";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUpRight, Film, Landmark, Mountain, Play, Radio, X } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { caseStudies, type CaseCategory, type CaseStudy } from "@/content/cases";
+import { caseStudies, caseVideos, type CaseCategory } from "@/content/cases";
 import { processSteps } from "@/content/services";
 import { InkBirds } from "./ink-birds";
 import { InkClouds } from "./ink-clouds";
@@ -17,23 +17,31 @@ const serviceItems = [
 
 export function HomeExperience() {
   const root = useRef<HTMLDivElement>(null);
-  const track = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState<"全部" | CaseCategory>("全部");
-  const [activeCase, setActiveCase] = useState<CaseStudy>();
-  const [episode, setEpisode] = useState(0);
+  const [activeVideo, setActiveVideo] = useState<number | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoState, setVideoState] = useState<"idle" | "loading" | "error">("idle");
   const filtered = caseStudies.filter((item) => category === "全部" || item.category === category);
   const openQuote = () => window.dispatchEvent(new Event("open-quote"));
   const coverUrl = (path: string) => `/api/media/image/${path.split("/").map(encodeURIComponent).join("/")}`;
-  async function playEpisode(item: CaseStudy, episodeIndex: number) {
-    setEpisode(episodeIndex); setVideoUrl(""); setVideoState("loading");
+  async function loadVideo(index: number) {
+    setActiveVideo(index); setVideoUrl(""); setVideoState("loading");
     try {
-      const response = await fetch("/api/media/video-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: item.episodes[episodeIndex].videoPath }) });
+      const response = await fetch("/api/media/video-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: caseVideos[index].videoPath }) });
       if (!response.ok) throw new Error();
       setVideoUrl((await response.json()).url); setVideoState("idle");
     } catch { setVideoState("error"); }
   }
+  useEffect(() => {
+    if (activeVideo === null) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setActiveVideo(null); setVideoUrl(""); }
+      if (event.key === "ArrowLeft") loadVideo((activeVideo - 1 + caseVideos.length) % caseVideos.length);
+      if (event.key === "ArrowRight") loadVideo((activeVideo + 1) % caseVideos.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeVideo]);
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -51,14 +59,9 @@ export function HomeExperience() {
       gsap.to(".hero-mountain-left", { xPercent: -14, yPercent: -5, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.to(".hero-mountain-right", { xPercent: 14, yPercent: -2, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.fromTo(".case-cloud-wipe", { xPercent: 18, yPercent: -8, opacity: .18 }, { xPercent: -10, yPercent: 8, opacity: .74, scrollTrigger: { trigger: ".cases-chapter", start: "top bottom", end: "top 42%", scrub: 1.2 } });
-      const media = gsap.matchMedia();
-      media.add("(min-width: 821px)", () => {
-        const distance = () => Math.max(0, (track.current?.scrollWidth || 0) - window.innerWidth + window.innerWidth * .16);
-        gsap.to(track.current, { x: () => -distance(), ease: "none", scrollTrigger: { trigger: ".case-scroll", start: "top top", end: () => `+=${distance() + window.innerWidth * .8}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 } });
-      });
+      gsap.from(".editorial-case", { y: 50, opacity: 0, stagger: .08, scrollTrigger: { trigger: ".case-editorial-grid", start: "top 78%" } });
       gsap.from(".service-node", { y: 50, opacity: 0, stagger: .16, scrollTrigger: { trigger: ".service-nodes", start: "top 72%" } });
       gsap.from(".process-node", { scale: .7, opacity: 0, stagger: .12, scrollTrigger: { trigger: ".process-river", start: "top 72%" } });
-      return () => media.revert();
     }, root);
     return () => context.revert();
   }, [filtered.length]);
@@ -67,7 +70,6 @@ export function HomeExperience() {
     <section id="home" className="hero-chapter story-chapter">
       <div className="hero-paper" />
       <img className="hero-layer hero-far" src="/ink/mou1.png" alt="" />
-      <img className="hero-layer hero-mid-left" src="/ink/mou2.png" alt="" />
       <img className="hero-layer hero-mountain-left" src="/ink/tree.png" alt="" />
       <img className="hero-layer hero-mountain-right" src="/ink/mou4.png" alt="" />
       <img className="hero-layer hero-pavilion" src="/ink/house.png" alt="" />
@@ -82,10 +84,10 @@ export function HomeExperience() {
       <div className="case-cloud-wipe"><InkClouds /></div>
       <header className="chapter-heading"><span>SELECTED WORKS · 作品志</span><h2>让作品，替我们表达</h2><p>从文化内核出发，为不同场景寻找最恰当的影像语言。</p></header>
       <div className="case-filters story-filters">{categories.map((item) => <button className={category === item ? "active" : ""} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div>
-      <div className="case-scroll"><div className="cinema-track" ref={track}>{filtered.map((item, index) => <article className="cinema-card" key={item.slug}>
-        <button className="cinema-visual" onClick={() => { setActiveCase(item); setEpisode(0); setVideoUrl(""); setVideoState("idle"); }}><div className={`ink-placeholder placeholder-${index % 4}`}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span>{item.episodes.length > 1 ? `${item.episodes.length} 集案例` : "播放案例"}</span></div><i><Play fill="currentColor"/></i><small>{String(index + 1).padStart(2,"0")} / {String(filtered.length).padStart(2,"0")}</small></button>
-        <div className="cinema-caption"><span>{item.category}</span><h3>{item.title}</h3><p>{item.summary}</p>{item.episodes.length > 1 && <b>{item.episodes.length} 集 / 版本</b>}</div>
-      </article>)}</div></div>
+      <div className="case-editorial-grid">{filtered.map((item, index) => <article className={`editorial-case editorial-${index % 5}`} key={item.slug}>
+        <button className="editorial-cover" onClick={() => loadVideo(caseVideos.findIndex((video) => video.projectSlug === item.slug))}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span><Play fill="currentColor"/></span></button>
+        <div className="editorial-caption"><small>{item.category}</small><h3>{item.title}</h3><p>{item.summary}</p></div>
+      </article>)}</div>
     </section>
 
     <section id="about" className="about-chapter story-chapter">
@@ -96,7 +98,7 @@ export function HomeExperience() {
       <div className="closing-cta"><span>NEXT STORY</span><h2>下一段文旅故事<br/>从这里开始</h2><button onClick={openQuote}>获取方案与报价 <ArrowUpRight/></button></div>
     </section>
 
-    {activeCase && <div className="project-overlay" role="dialog" aria-modal="true" aria-label={activeCase.title}><button className="project-close" onClick={()=>setActiveCase(undefined)} aria-label="关闭案例"><X/></button><div className={`project-stage is-${activeCase.episodes[episode].orientation}`}>{videoUrl ? <video className="project-video" src={videoUrl} controls autoPlay playsInline/> : <button className="project-placeholder" onClick={()=>playEpisode(activeCase,episode)} disabled={videoState==="loading"}><img src={coverUrl(activeCase.coverPath)} alt={`${activeCase.title}封面`}/><Play size={52}/><span>{videoState==="loading" ? "正在获取视频…" : videoState==="error" ? "加载失败，点击重试" : `播放${activeCase.episodes[episode].title}`}</span></button>}</div><div className="project-info"><span>{activeCase.category}</span><h2>{activeCase.title}</h2><p>{activeCase.summary}</p>{activeCase.episodes.length>1&&<div className="episode-tabs">{activeCase.episodes.map((item,index)=><button className={episode===index?"active":""} onClick={()=>{setEpisode(index);setVideoUrl("");setVideoState("idle")}} key={item.title}>{item.title}<small>{item.orientation === "portrait" ? "竖版" : "横版"}</small></button>)}</div>}<small>视频来自私有 OSS，播放链接将在打开时临时生成</small></div></div>}
+    {activeVideo !== null && <div className="video-lightbox" role="dialog" aria-modal="true" aria-label={caseVideos[activeVideo].projectTitle}><button className="lightbox-close" onClick={()=>{setActiveVideo(null);setVideoUrl("")}} aria-label="关闭案例"><X/></button><button className="lightbox-arrow prev" onClick={()=>loadVideo((activeVideo-1+caseVideos.length)%caseVideos.length)} aria-label="上一个视频">‹</button><div className={`video-shell is-${caseVideos[activeVideo].orientation}`}>{videoUrl ? <video src={videoUrl} controls autoPlay playsInline/> : <button className="video-poster" onClick={()=>loadVideo(activeVideo)} disabled={videoState==="loading"}><img src={coverUrl(caseVideos[activeVideo].coverPath)} alt={`${caseVideos[activeVideo].projectTitle}封面`}/><Play size={46}/><span>{videoState==="loading"?"正在载入…":videoState==="error"?"加载失败，点击重试":"播放影片"}</span></button>}<footer><div><small>{caseVideos[activeVideo].category}</small><strong>{caseVideos[activeVideo].projectTitle}</strong></div><span>{String(activeVideo+1).padStart(2,"0")} / {caseVideos.length}</span></footer></div><button className="lightbox-arrow next" onClick={()=>loadVideo((activeVideo+1)%caseVideos.length)} aria-label="下一个视频">›</button></div>}
     <QuotePanel />
   </div>;
 }
