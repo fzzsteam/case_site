@@ -1,4 +1,4 @@
-export type CaseCategory = "宣传片" | "广告片" | "短剧";
+export type CaseCategory = "宣传片" | "广告片" | "短剧" | "IP创造";
 export type VideoOrientation = "landscape" | "portrait";
 export type Episode = { title: string; videoPath: string; orientation: VideoOrientation };
 export type CaseStudy = { slug: string; title: string; category: CaseCategory; summary: string; coverPath: string; episodes: Episode[] };
@@ -11,16 +11,16 @@ const project = (folder: string, data: Omit<CaseStudy, "coverPath" | "episodes">
 });
 
 export const caseStudies: CaseStudy[] = [
-  project("深圳南山城市宣传片-南得遇见你", { slug: "meet-nande", title: "南得遇见你", category: "宣传片", summary: "一座城市在山水与人文之间徐徐展开。" }, ["case1.mp4"], ["portrait"]),
-  project("疯狂的荔枝", { slug: "crazy-litchi", title: "疯狂的荔枝", category: "短剧", summary: "岭南风物与年轻叙事碰撞出的四集文化短剧。" }, ["case1.mp4", "case2.mp4", "case3.mp4", "case4.mp4"], ["portrait", "portrait", "portrait", "portrait"]),
-  project("苏东坡与六榕寺", { slug: "sudongpo-liurong", title: "苏东坡与六榕寺", category: "宣传片", summary: "循着历史人物的足迹重新看见城市文化。" }, ["case1.mp4"], ["landscape"]),
-  project("苏东坡带货视频", { slug: "sudongpo-commerce", title: "苏东坡带货视频", category: "广告片", summary: "古典人物走入当代消费语境的创意广告。" }, ["case1.mp4", "case2.mp4"], ["portrait", "landscape"], ["竖屏版", "横屏版"]),
-  project("苏东坡的荔枝狂想", { slug: "sudongpo-litchi", title: "苏东坡的荔枝狂想", category: "宣传片", summary: "以诗意想象连接苏东坡与岭南荔枝文化。" }, ["case1.mp4"], ["landscape"]),
-  project("阳仔AI陪伴机-新年宣传片", { slug: "homecoming", title: "阳仔 AI 陪伴机新年宣传片", category: "广告片", summary: "用温暖科技讲述春节归家的情感。" }, ["case1.mp4"], ["landscape"]),
-  project("阳仔AI陪伴机-新年TVC", { slug: "yangzai-tvc", title: "阳仔 AI 陪伴机新年 TVC", category: "广告片", summary: "陪伴型产品的新年品牌影像表达。" }, ["case1.mp4"], ["landscape"]),
-  project("阳仔AI陪伴机-新年祝福", { slug: "yangzai-greeting", title: "阳仔 AI 陪伴机新年祝福", category: "广告片", summary: "以 IP 陪伴感传递品牌的新年祝福。" }, ["case.mp4"], ["portrait"]),
-  project("阳仔IP动画-阳仔学英语", { slug: "yangzai-english", title: "阳仔学英语", category: "广告片", summary: "通过系列 IP 动画呈现轻松的陪伴学习场景。" }, ["case1.mp4", "case2.mp4", "case3.mp4"], ["landscape", "landscape", "landscape"]),
-  project("阳仔IP动画-阳光小镇", { slug: "sunshine-town", title: "阳光小镇", category: "广告片", summary: "以连续动画故事建立产品角色与世界观。" }, ["case1.mp4", "case2.mp4"], ["portrait", "landscape"]),
+  project("苏东坡的荔枝狂想", { slug: "sudongpo-litchi", title: "苏东坡的荔枝狂想", category: "宣传片", summary: "增城文旅宣传片" }, ["case1.mp4"], ["landscape"]),
+  project("苏东坡带货视频", { slug: "sudongpo-commerce", title: "苏东坡带货增城荔枝", category: "广告片", summary: "增城荔枝创意广告。" }, ["case1.mp4", "case2.mp4"], ["portrait", "landscape"], ["竖屏版", "横屏版"]),
+  project("苏东坡与六榕寺", { slug: "sudongpo-liurong", title: "苏东坡与六榕寺", category: "宣传片", summary: "广州六榕寺文旅宣传片。" }, ["case1.mp4"], ["landscape"]),
+  project("疯狂的荔枝", { slug: "crazy-litchi", title: "疯狂的荔枝", category: "短剧", summary: "岭南荔枝商路传奇复仇短剧。" }, ["case1.mp4", "case2.mp4", "case3.mp4", "case4.mp4"], ["portrait", "portrait", "portrait", "portrait"]),
+  project("深圳南山城市宣传片-南得遇见你", { slug: "meet-nande", title: "南得遇见你", category: "宣传片", summary: "深圳市南山区城市文旅宣传片。" }, ["case1.mp4"], ["portrait"]),
+  project("阳仔AI陪伴机-新年宣传片", { slug: "homecoming", title: "家无定址，心有归期", category: "广告片", summary: "阳仔 AI 陪伴机新年宣传片。" }, ["case1.mp4"], ["landscape"]),
+  project("阳仔AI陪伴机-新年TVC", { slug: "yangzai-tvc", title: "小小心事也值得被听见", category: "广告片", summary: "阳仔 AI 陪伴机新年 TVC。" }, ["case1.mp4"], ["landscape"]),
+  project("阳仔AI陪伴机-新年祝福", { slug: "yangzai-greeting", title: "阳仔，你听见了吗", category: "广告片", summary: "阳仔 AI 陪伴机新年祝福视频。" }, ["case.mp4"], ["portrait"]),
+  project("阳仔IP动画-阳仔学英语", { slug: "yangzai-english", title: "阳仔学英语", category: "IP创造", summary: "创造衍生IP系列儿童学习短剧。" }, ["case1.mp4", "case2.mp4", "case3.mp4"], ["landscape", "landscape", "landscape"]),
+  project("阳仔IP动画-阳光小镇", { slug: "sunshine-town", title: "阳光小镇", category: "IP创造", summary: "创造衍生IP系列儿童短剧。" }, ["case1.mp4", "case2.mp4"], ["portrait", "landscape"]),
 ];
 
 export const getCaseBySlug = (slug: string) => caseStudies.find((item) => item.slug === slug);
