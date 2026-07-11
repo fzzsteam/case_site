@@ -49,11 +49,10 @@ export function HomeExperience() {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduce) return;
       gsap.timeline({ defaults: { ease: "power3.out" } })
-        .from(".hero-mountain-left", { xPercent: -38, opacity: 0, duration: 1.8 })
-        .from(".hero-mountain-right", { xPercent: 38, opacity: 0, duration: 1.8 }, "<")
-        .from(".hero-pavilion", { xPercent: 22, yPercent: 12, opacity: 0, duration: 1.5 }, "-=1.1")
-        .from(".hero-copy > *", { y: 28, opacity: 0, stagger: .12, duration: .8 }, "-=1")
-        .from(".story-birds", { x: -120, y: 50, opacity: 0, duration: 2 }, "-=1.2");
+        .from(".hero-mountain-left", { xPercent: -22, duration: 1.5 })
+        .from(".hero-mountain-right", { xPercent: 22, duration: 1.5 }, "<")
+        .from(".hero-copy > *", { y: 14, stagger: .08, duration: .6 }, "-=1")
+        .from(".story-birds", { x: -90, y: 32, duration: 1.7 }, "-=1.1");
       gsap.to(".cloud-back", { xPercent: 8, duration: 24, repeat: -1, yoyo: true, ease: "sine.inOut" });
       gsap.to(".cloud-front", { xPercent: -10, duration: 31, repeat: -1, yoyo: true, ease: "sine.inOut" });
       gsap.to(".hero-mountain-left", { xPercent: -14, yPercent: -5, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
@@ -72,7 +71,6 @@ export function HomeExperience() {
       <img className="hero-layer hero-far" src="/ink/mou1.png" alt="" />
       <img className="hero-layer hero-mountain-left" src="/ink/tree.png" alt="" />
       <img className="hero-layer hero-mountain-right" src="/ink/mou4.png" alt="" />
-      <img className="hero-layer hero-pavilion" src="/ink/house.png" alt="" />
       <InkClouds className="hero-layer cloud-back" />
       <InkClouds className="hero-layer cloud-front" />
       <InkBirds />
