@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { caseStudies, type CaseCategory, type CaseStudy } from "@/content/cases";
 import { processSteps } from "@/content/services";
 import { InkBirds } from "./ink-birds";
+import { InkClouds } from "./ink-clouds";
 import { QuotePanel } from "./quote-panel";
 
 const categories: Array<"全部" | CaseCategory> = ["全部", "宣传片", "广告片", "短剧"];
@@ -38,7 +39,7 @@ export function HomeExperience() {
       gsap.to(".cloud-front", { xPercent: -10, duration: 31, repeat: -1, yoyo: true, ease: "sine.inOut" });
       gsap.to(".hero-mountain-left", { xPercent: -14, yPercent: -5, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.to(".hero-mountain-right", { xPercent: 14, yPercent: -2, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
-      gsap.fromTo(".case-cloud-wipe", { xPercent: 70, opacity: 0 }, { xPercent: -70, opacity: .9, scrollTrigger: { trigger: ".cases-chapter", start: "top bottom", end: "top 35%", scrub: true } });
+      gsap.fromTo(".case-cloud-wipe", { xPercent: 18, yPercent: -8, opacity: .18 }, { xPercent: -10, yPercent: 8, opacity: .74, scrollTrigger: { trigger: ".cases-chapter", start: "top bottom", end: "top 42%", scrub: 1.2 } });
       const media = gsap.matchMedia();
       media.add("(min-width: 821px)", () => {
         const distance = () => Math.max(0, (track.current?.scrollWidth || 0) - window.innerWidth + window.innerWidth * .16);
@@ -59,15 +60,15 @@ export function HomeExperience() {
       <img className="hero-layer hero-mountain-left" src="/ink/tree.png" alt="" />
       <img className="hero-layer hero-mountain-right" src="/ink/mou4.png" alt="" />
       <img className="hero-layer hero-pavilion" src="/ink/house.png" alt="" />
-      <img className="hero-layer cloud-back" src="/ink/cloud.png" alt="" />
-      <img className="hero-layer cloud-front" src="/ink/cloud.png" alt="" />
+      <InkClouds className="hero-layer cloud-back" />
+      <InkClouds className="hero-layer cloud-front" />
       <InkBirds />
       <div className="hero-copy"><span>CULTURE · TECHNOLOGY · IMAGINATION</span><h1>用 AIGC<br/><em>重新定义</em>文旅表达</h1><p>以 AI 技术与文化叙事相结合，为城市、景区、博物馆与乡村非遗创造更具感染力的影像。</p><div><a href="#cases">查看案例 <ArrowUpRight size={17}/></a><button onClick={openQuote}>获取定制方案 <ArrowUpRight size={17}/></button></div></div>
       <a className="scroll-cue" href="#cases"><span>向下展开画卷</span><ArrowDown size={17}/></a>
     </section>
 
     <section id="cases" className="cases-chapter story-chapter">
-      <div className="case-cloud-wipe"><img src="/ink/cloud.png" alt="" /></div>
+      <div className="case-cloud-wipe"><InkClouds /></div>
       <header className="chapter-heading"><span>SELECTED WORKS · 作品志</span><h2>让作品，替我们表达</h2><p>从文化内核出发，为不同场景寻找最恰当的影像语言。</p></header>
       <div className="case-filters story-filters">{categories.map((item) => <button className={category === item ? "active" : ""} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div>
       <div className="case-scroll"><div className="cinema-track" ref={track}>{filtered.map((item, index) => <article className="cinema-card" key={item.slug}>

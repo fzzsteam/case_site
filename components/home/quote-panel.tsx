@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Check, Mail, Phone, X } from "lucide-react";
 import { pricing } from "@/content/pricing";
 import { siteConfig } from "@/content/site";
+import { InkClouds } from "./ink-clouds";
 
 export function QuotePanel() {
   const [open, setOpen] = useState(false);
@@ -14,7 +15,7 @@ export function QuotePanel() {
   }, []);
   useEffect(() => { document.body.style.overflow = open ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [open]);
   return <div className={`quote-overlay ${open ? "is-open" : ""}`} aria-hidden={!open}>
-    <div className="quote-cloud quote-cloud-left" /><div className="quote-cloud quote-cloud-right" />
+    <div className="quote-cloud quote-cloud-left"><InkClouds /></div><div className="quote-cloud quote-cloud-right"><InkClouds /></div>
     <section className="quote-sheet" role="dialog" aria-modal="true" aria-label="服务报价与联系">
       <button className="quote-close" onClick={() => setOpen(false)} aria-label="关闭报价"><X /></button>
       <div className="quote-heading"><span>SERVICE & PRICING</span><h2>选择适合你的<br />合作方式</h2><p>以下为基础参考报价，最终方案根据创意复杂度、素材规模与交付周期确定。</p></div>
