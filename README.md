@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-访问 `http://localhost:3000`。当前案例使用水墨封面和视频占位，不读取本地项目视频；收到正式 OSS 相对路径后再填写媒体字段。
+访问 `http://localhost:3000`。案例封面通过服务端代理读取私有 OSS；点击案例后，播放器仅为当前选中的分集生成临时视频链接。
 
 ## OSS 配置
 
@@ -26,16 +26,16 @@ OSS_ACCESS_KEY_SECRET=your-access-key-secret
 
 Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` 同源代理并缓存，视频仅在点击播放后由 `/api/media/video-url` 返回 15 分钟签名 URL。AccessKey 只能设置为服务端环境变量，禁止添加 `NEXT_PUBLIC_` 前缀。
 
-允许的对象前缀为 `cases/` 和 `brand/`。案例配置位于 `content/cases.ts`，一个项目可以包含多个分集或横竖屏版本：
+案例对象前缀为 `case-site/cases/`。配置位于 `content/cases.ts`，一个项目使用一张封面，并可以包含多个分集或横竖屏版本：
 
 ```ts
 {
   slug: "sudongpo-commerce",
   category: "广告片",
-  coverPath: null,
+  coverPath: "case-site/cases/苏东坡带货视频/cover.png",
   episodes: [
-    { title: "横屏版", videoPath: null },
-    { title: "竖屏版", videoPath: null }
+    { title: "竖屏版", videoPath: "case-site/cases/苏东坡带货视频/case1.mp4", orientation: "portrait" },
+    { title: "横屏版", videoPath: "case-site/cases/苏东坡带货视频/case2.mp4", orientation: "landscape" }
   ]
 }
 ```

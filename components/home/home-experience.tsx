@@ -21,8 +21,19 @@ export function HomeExperience() {
   const [category, setCategory] = useState<"全部" | CaseCategory>("全部");
   const [activeCase, setActiveCase] = useState<CaseStudy>();
   const [episode, setEpisode] = useState(0);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoState, setVideoState] = useState<"idle" | "loading" | "error">("idle");
   const filtered = caseStudies.filter((item) => category === "全部" || item.category === category);
   const openQuote = () => window.dispatchEvent(new Event("open-quote"));
+  const coverUrl = (path: string) => `/api/media/image/${path.split("/").map(encodeURIComponent).join("/")}`;
+  async function playEpisode(item: CaseStudy, episodeIndex: number) {
+    setEpisode(episodeIndex); setVideoUrl(""); setVideoState("loading");
+    try {
+      const response = await fetch("/api/media/video-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: item.episodes[episodeIndex].videoPath }) });
+      if (!response.ok) throw new Error();
+      setVideoUrl((await response.json()).url); setVideoState("idle");
+    } catch { setVideoState("error"); }
+  }
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -72,8 +83,8 @@ export function HomeExperience() {
       <header className="chapter-heading"><span>SELECTED WORKS · 作品志</span><h2>让作品，替我们表达</h2><p>从文化内核出发，为不同场景寻找最恰当的影像语言。</p></header>
       <div className="case-filters story-filters">{categories.map((item) => <button className={category === item ? "active" : ""} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div>
       <div className="case-scroll"><div className="cinema-track" ref={track}>{filtered.map((item, index) => <article className="cinema-card" key={item.slug}>
-        <button className="cinema-visual" onClick={() => { setActiveCase(item); setEpisode(0); }}><div className={`ink-placeholder placeholder-${index % 4}`}><img src={`/ink/mou${index % 4 + 1}.png`} alt=""/><span>影像待映</span></div><i><Play fill="currentColor"/></i><small>{String(index + 1).padStart(2,"0")} / {String(filtered.length).padStart(2,"0")}</small></button>
-        <div className="cinema-caption"><span>{item.category}</span><h3>{item.title}</h3><p>{item.summary}</p>{item.episodes.length > 1 && <b>{item.episodes.length} 个版本</b>}</div>
+        <button className="cinema-visual" onClick={() => { setActiveCase(item); setEpisode(0); setVideoUrl(""); setVideoState("idle"); }}><div className={`ink-placeholder placeholder-${index % 4}`}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span>{item.episodes.length > 1 ? `${item.episodes.length} 集案例` : "播放案例"}</span></div><i><Play fill="currentColor"/></i><small>{String(index + 1).padStart(2,"0")} / {String(filtered.length).padStart(2,"0")}</small></button>
+        <div className="cinema-caption"><span>{item.category}</span><h3>{item.title}</h3><p>{item.summary}</p>{item.episodes.length > 1 && <b>{item.episodes.length} 集 / 版本</b>}</div>
       </article>)}</div></div>
     </section>
 
@@ -85,7 +96,7 @@ export function HomeExperience() {
       <div className="closing-cta"><span>NEXT STORY</span><h2>下一段文旅故事<br/>从这里开始</h2><button onClick={openQuote}>获取方案与报价 <ArrowUpRight/></button></div>
     </section>
 
-    {activeCase && <div className="project-overlay" role="dialog" aria-modal="true" aria-label={activeCase.title}><button className="project-close" onClick={()=>setActiveCase(undefined)} aria-label="关闭案例"><X/></button><div className="project-stage"><div className="project-placeholder"><img src="/ink/mou3.png" alt=""/><Play size={52}/><span>视频路径待配置</span></div></div><div className="project-info"><span>{activeCase.category}</span><h2>{activeCase.title}</h2><p>{activeCase.summary}</p>{activeCase.episodes.length>1&&<div className="episode-tabs">{activeCase.episodes.map((item,index)=><button className={episode===index?"active":""} onClick={()=>setEpisode(index)} key={item.title}>{item.title}</button>)}</div>}<small>{activeCase.episodes[episode].videoPath ? "视频已就绪" : "案例整理中，稍后接入 OSS 视频"}</small></div></div>}
+    {activeCase && <div className="project-overlay" role="dialog" aria-modal="true" aria-label={activeCase.title}><button className="project-close" onClick={()=>setActiveCase(undefined)} aria-label="关闭案例"><X/></button><div className={`project-stage is-${activeCase.episodes[episode].orientation}`}>{videoUrl ? <video className="project-video" src={videoUrl} controls autoPlay playsInline/> : <button className="project-placeholder" onClick={()=>playEpisode(activeCase,episode)} disabled={videoState==="loading"}><img src={coverUrl(activeCase.coverPath)} alt={`${activeCase.title}封面`}/><Play size={52}/><span>{videoState==="loading" ? "正在获取视频…" : videoState==="error" ? "加载失败，点击重试" : `播放${activeCase.episodes[episode].title}`}</span></button>}</div><div className="project-info"><span>{activeCase.category}</span><h2>{activeCase.title}</h2><p>{activeCase.summary}</p>{activeCase.episodes.length>1&&<div className="episode-tabs">{activeCase.episodes.map((item,index)=><button className={episode===index?"active":""} onClick={()=>{setEpisode(index);setVideoUrl("");setVideoState("idle")}} key={item.title}>{item.title}<small>{item.orientation === "portrait" ? "竖版" : "横版"}</small></button>)}</div>}<small>视频来自私有 OSS，播放链接将在打开时临时生成</small></div></div>}
     <QuotePanel />
   </div>;
 }

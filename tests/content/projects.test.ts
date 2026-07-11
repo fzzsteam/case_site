@@ -1,14 +1,17 @@
 import { caseStudies } from "@/content/cases";
 
-it("contains all eight project placeholders", () => {
-  expect(caseStudies).toHaveLength(8);
-  expect(caseStudies.map((item) => item.title)).toEqual(expect.arrayContaining(["疯狂的荔枝", "苏东坡的荔枝狂想", "阳仔 IP 动画视频"]));
+it("contains all ten uploaded projects", () => {
+  expect(caseStudies).toHaveLength(10);
+  expect(caseStudies.map((item) => item.title)).toEqual(expect.arrayContaining(["疯狂的荔枝", "苏东坡的荔枝狂想", "阳仔学英语", "阳光小镇"]));
 });
 
-it("supports project episodes without media paths", () => {
+it("maps project episodes to private OSS object keys", () => {
   const commerce = caseStudies.find((item) => item.title === "苏东坡带货视频");
-  expect(commerce?.episodes.map((episode) => episode.title)).toEqual(["横屏版", "竖屏版"]);
-  expect(commerce?.episodes.every((episode) => episode.videoPath === null)).toBe(true);
+  expect(commerce?.episodes.map((episode) => episode.title)).toEqual(["竖屏版", "横屏版"]);
+  expect(commerce?.episodes[0].videoPath).toBe("case-site/cases/苏东坡带货视频/case1.mp4");
+  expect(commerce?.episodes.map((episode) => episode.orientation)).toEqual(["portrait", "landscape"]);
+  expect(caseStudies.find((item) => item.title === "疯狂的荔枝")?.episodes.every((episode) => episode.orientation === "portrait")).toBe(true);
+  expect(caseStudies.every((item) => item.coverPath?.endsWith("/cover.png"))).toBe(true);
 });
 
 it("uses only the approved case categories", () => {

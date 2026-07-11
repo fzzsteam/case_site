@@ -1,4 +1,4 @@
-const ALLOWED_PREFIXES = ["cases/", "brand/"];
+const ALLOWED_PREFIXES = ["case-site/cases/", "brand/"];
 
 export function validateMediaPath(input: string) {
   let path: string;
