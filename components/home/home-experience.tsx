@@ -50,16 +50,15 @@ export function HomeExperience() {
       if (reduce) return;
       gsap.timeline({ defaults: { ease: "power3.out" } })
         .from(".hero-far", { yPercent: -6, scale: .97, duration: 1.7 })
-        .from(".hero-mid-ridge", { xPercent: -8, duration: 1.5 }, "-=1.3")
+        .from(".hero-mid-ridge-left", { xPercent: -10, duration: 1.55 }, "-=1.35")
+        .from(".hero-mid-ridge-right", { xPercent: 10, duration: 1.55 }, "<")
         .from(".hero-mountain-left", { xPercent: -14, duration: 1.5 }, "-=1.25")
         .from(".hero-mountain-right", { xPercent: 14, duration: 1.5 }, "<")
         .from(".hero-copy > *", { y: 14, stagger: .08, duration: .6 }, "-=1")
       gsap.fromTo(".story-birds", { x: "-16vw", y: "12vh", opacity: .72 }, { x: "34vw", y: "-18vh", opacity: 0, duration: 12, delay: 1.2, ease: "none" });
-      gsap.to(".cloud-back", { xPercent: 8, duration: 24, repeat: -1, yoyo: true, ease: "sine.inOut" });
-      gsap.to(".cloud-front", { xPercent: -10, duration: 31, repeat: -1, yoyo: true, ease: "sine.inOut" });
-      gsap.to(".hero-mountain-left", { xPercent: -14, yPercent: -5, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
-      gsap.to(".hero-mountain-right", { xPercent: 14, yPercent: -2, scrollTrigger: { trigger: ".hero-chapter", start: "top top", end: "bottom top", scrub: 1 } });
-      gsap.fromTo(".case-cloud-wipe", { xPercent: 18, yPercent: -8, opacity: .18 }, { xPercent: -10, yPercent: 8, opacity: .74, scrollTrigger: { trigger: ".cases-chapter", start: "top bottom", end: "top 42%", scrub: 1.2 } });
+      gsap.to(".cloud-back", { xPercent: 4, duration: 28, repeat: -1, yoyo: true, ease: "sine.inOut" });
+      gsap.to(".cloud-front", { xPercent: -5, duration: 34, repeat: -1, yoyo: true, ease: "sine.inOut" });
+      gsap.from(".case-cloud-wipe", { xPercent: 10, opacity: .1, duration: 1.4, scrollTrigger: { trigger: ".cases-chapter", start: "top 85%", toggleActions: "play none none reverse" } });
       gsap.from(".editorial-case", { y: 50, opacity: 0, stagger: .08, scrollTrigger: { trigger: ".case-editorial-grid", start: "top 78%" } });
       gsap.from(".service-node", { y: 50, opacity: 0, stagger: .16, scrollTrigger: { trigger: ".service-nodes", start: "top 72%" } });
       gsap.from(".process-node", { scale: .7, opacity: 0, stagger: .12, scrollTrigger: { trigger: ".process-river", start: "top 72%" } });
@@ -71,7 +70,8 @@ export function HomeExperience() {
     <section id="home" className="hero-chapter story-chapter">
       <div className="hero-paper" />
       <img className="hero-layer hero-far" src="/ink/mou1.png" alt="" />
-      <img className="hero-layer hero-mid-ridge" src="/ink/mou2.png" alt="" />
+      <img className="hero-layer hero-mid-ridge hero-mid-ridge-left" src="/ink/mou2.png" alt="" />
+      <div className="hero-layer hero-mid-ridge hero-mid-ridge-right"><img src="/ink/mou3.png" alt="" /></div>
       <img className="hero-layer hero-mountain-left" src="/ink/tree.png" alt="" />
       <img className="hero-layer hero-mountain-right" src="/ink/mou4.png" alt="" />
       <InkClouds className="hero-layer cloud-back" />
