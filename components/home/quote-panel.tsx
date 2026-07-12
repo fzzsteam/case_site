@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check, Mail, Phone, X } from "lucide-react";
+import { Check, Phone, X } from "lucide-react";
 import { pricing } from "@/content/pricing";
 import { siteConfig } from "@/content/site";
 import { InkClouds } from "./ink-clouds";
@@ -22,7 +22,7 @@ export function QuotePanel() {
         <div className="quote-plan-summary"><span>0{index + 1}</span><strong>{plan.name}</strong><b>{plan.price}</b></div>
         <div className="quote-plan-detail"><div><em>{plan.rate}</em><small>{plan.unit}</small></div><ul>{plan.features.map((feature) => <li key={feature}><Check size={15} />{feature}</li>)}</ul></div>
       </article>)}</div>
-      <aside className="quote-contact"><div className="quote-pavilion"><img src="/ink/right1.png" alt="" /></div><div className="quote-qr"><img src="/qrcode.png" alt="万象元生微信咨询二维码" /></div><strong>扫码获取定制化方案</strong><a href={`tel:${siteConfig.phone}`}><Phone size={15}/>{siteConfig.phone}</a><a href={`mailto:${siteConfig.email}`}><Mail size={15}/>{siteConfig.email}</a></aside>
+      <aside className="quote-contact"><div className="quote-pavilion"><img src="/ink/right1.png" alt="" /></div><div className="quote-qr"><img src="/qrcode.png" alt="万象元生微信咨询二维码" /></div><strong>扫码获取定制化方案</strong><a href={`tel:${siteConfig.phone}`}><Phone size={15}/>{siteConfig.phone}</a></aside>
     </section>
   </div>;
 }

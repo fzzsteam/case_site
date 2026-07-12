@@ -6,6 +6,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { caseStudies, caseVideos, type CaseCategory } from "@/content/cases";
 import { siteConfig } from "@/content/site";
 import { QuotePanel } from "./quote-panel";
+const driftClouds = [
+  ["/ink/cloud4.png", "drift-1"], ["/ink/cloud3.png", "drift-2"], ["/ink/cloud4.png", "drift-3"],
+  ["/ink/cloud3.png", "drift-4"], ["/ink/cloud4.png", "drift-5"], ["/ink/cloud3.png", "drift-6"],
+  ["/ink/cloud4.png", "drift-7"], ["/ink/cloud3.png", "drift-8"], ["/ink/cloud4.png", "drift-9"],
+  ["/ink/cloud3.png", "drift-10"],
+] as const;
 
 const categories: Array<"全部" | CaseCategory> = ["全部", "宣传片", "广告片", "短剧", "IP创造"];
 const serviceItems = [
@@ -81,7 +87,7 @@ export function HomeExperience() {
         .from(".origin-middle-islands, .origin-right-mountain, .origin-right-pavilion", { x: "16vw", duration: 2.1 }, .18)
         .from(".hero-copy > *", { y: 14, stagger: .08, duration: .6 }, "-=1")
       gsap.from(".editorial-case", { y: 50, opacity: 0, stagger: .08, scrollTrigger: { trigger: ".case-editorial-grid", start: "top 78%" } });
-      gsap.from(".service-node", { y: 50, opacity: 0, stagger: .16, scrollTrigger: { trigger: ".service-nodes", start: "top 72%" } });
+      gsap.from(".service-heading, .compact-services", { y: 44, opacity: 0, stagger: .18, scrollTrigger: { trigger: ".service-heading", start: "top 80%" } });
     }, root);
     return () => context.revert();
   }, [filtered.length]);
@@ -92,6 +98,7 @@ export function HomeExperience() {
       <div className="hero-art-viewport" aria-hidden="true">
         <HeroArtCanvas />
       </div>
+      {driftClouds.map(([src, cls]) => <img key={cls} className={`hero-drift ${cls}`} src={src} alt="" aria-hidden="true" />)}
       <HeroMist depth="back" />
       <HeroMist depth="front" />
       <div className="hero-copy"><span>CULTURE · TECHNOLOGY · IMAGINATION</span><h1>用 AIGC<br/><em>重新定义</em>文旅表达</h1><p>以 AI 技术与文化叙事相结合，为城市、景区、博物馆与乡村非遗创造更具感染力的影像。</p><div><a href="#cases">查看案例 <ArrowUpRight size={17}/></a><button onClick={openQuote}>获取定制方案 <ArrowUpRight size={17}/></button></div></div>
@@ -104,6 +111,8 @@ export function HomeExperience() {
         <button className="editorial-cover" onClick={() => loadVideo(caseVideos.findIndex((video) => video.projectSlug === item.slug))}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span><Play fill="currentColor"/></span></button>
         <div className="editorial-caption"><small>{item.category}</small><h3>{item.title}</h3><p>{item.summary}</p></div>
       </article>)}</div>
+      <header className="service-heading"><span>SERVICES</span><h3>服务内容</h3></header>
+      <div className="service-nodes compact-services">{serviceItems.map(({title,icon:Icon}, index)=><article className="service-node" key={title}><span>0{index+1}</span><Icon/><h3>{title}</h3></article>)}</div>
     </section>
 
     <section id="about" className="about-chapter story-chapter">
@@ -112,11 +121,10 @@ export function HomeExperience() {
         <dl className="company-facts">
           <div><dt>公司名称</dt><dd>{siteConfig.companyName}</dd></div>
           <div><dt>办公地址</dt><dd>{siteConfig.address}</dd></div>
-          <div><dt>备案号</dt><dd><a href={siteConfig.icpUrl} target="_blank" rel="noreferrer">{siteConfig.icp}</a></dd></div>
+          <div><dt>企业愿景</dt><dd>{siteConfig.companyVision}</dd></div>
         </dl>
       </div>
-      <div className="service-nodes compact-services">{serviceItems.map(({title,icon:Icon}, index)=><article className="service-node" key={title}><span>0{index+1}</span><Icon/><h3>{title}</h3></article>)}</div>
-      <div className="closing-cta"><span>CONTACT</span><h2>告诉我们你的项目需求</h2><button onClick={openQuote}>获取方案与报价 <ArrowUpRight/></button></div>
+      <div className="closing-cta"><i className="cta-rule" aria-hidden="true"/><span>CONTACT</span><h2>告诉我们你的项目需求</h2><p>从创意方向到成片交付，留下你的想法，我们会尽快联系你并给出方案与报价。</p><button onClick={openQuote}>获取方案与报价 <ArrowUpRight/></button></div>
     </section>
 
     {activeVideo !== null && currentVideo && <div className="video-lightbox" role="dialog" aria-modal="true" aria-label={currentVideo.projectTitle}><button className="lightbox-close" onClick={()=>{setActiveVideo(null);setVideoUrl("")}} aria-label="关闭案例"><X/></button><div className={`video-stage is-${currentVideo.orientation}`}>{previousCaseVideo && <button className="lightbox-arrow prev" onClick={()=>loadVideo(caseVideos.findIndex((video) => video.videoPath === previousCaseVideo.videoPath))} aria-label="上一个视频"><ArrowLeft size={22}/></button>}<div className={`video-shell is-${currentVideo.orientation}`}>{videoUrl ? <video src={videoUrl} controls autoPlay playsInline/> : <button className="video-poster" onClick={()=>loadVideo(activeVideo)} disabled={videoState==="loading"}><img src={coverUrl(currentVideo.coverPath)} alt={`${currentVideo.projectTitle}封面`}/><Play size={46}/><span>{videoState==="loading"?"正在载入…":videoState==="error"?"加载失败，点击重试":"播放影片"}</span></button>}<footer><div><small>{currentVideo.category}</small><strong>{currentVideo.projectTitle}</strong></div><span>{String(currentCasePosition+1).padStart(2,"0")} / {String(currentCaseVideos.length).padStart(2,"0")}</span></footer></div>{nextCaseVideo && <button className="lightbox-arrow next" onClick={()=>loadVideo(caseVideos.findIndex((video) => video.videoPath === nextCaseVideo.videoPath))} aria-label="下一个视频"><ArrowRight size={22}/></button>}</div></div>}

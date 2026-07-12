@@ -40,14 +40,16 @@ it("uses two split mist layers for the opening reveal", () => {
   expect(container.querySelectorAll(".hero-mist-half")).toHaveLength(4);
 });
 
-it("renders the about section with company information and compact service cards", () => {
+it("renders the about section with company information and services under the cases chapter", () => {
   const { container } = render(<HomePage />);
   expect(screen.getByRole("heading", { level: 2, name: "关于我们" })).toBeInTheDocument();
   expect(screen.getByText(/深圳市方直智胜科技有限公司成立于深圳/)).toBeInTheDocument();
   expect(screen.getByText("深圳市方直智胜科技有限公司")).toBeInTheDocument();
   expect(screen.getAllByText("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901").length).toBeGreaterThan(0);
-  expect(screen.getByText("粤ICP备2026044251号")).toBeInTheDocument();
+  expect(screen.queryByText("粤ICP备2026044251号")).not.toBeInTheDocument();
   expect(screen.getByText("城市文旅 AI 宣传片")).toBeInTheDocument();
+  expect(container.querySelector(".cases-chapter .compact-services")).toBeInTheDocument();
+  expect(container.querySelector(".about-chapter .compact-services")).not.toBeInTheDocument();
   expect(screen.queryByText("从理解开始，到传播发生")).not.toBeInTheDocument();
   expect(screen.queryByText("需求沟通")).not.toBeInTheDocument();
   expect(container.querySelector(".about-landscape")).not.toBeInTheDocument();
@@ -57,8 +59,8 @@ it("renders every quote plan expanded without click-to-expand controls", () => {
   const { container } = render(<HomePage />);
   expect(container.querySelectorAll(".quote-plan-detail")).toHaveLength(3);
   expect(container.querySelectorAll(".quote-plans article > button")).toHaveLength(0);
-  expect(screen.getByText("lanyanfeng@fzzsedu.cn")).toBeInTheDocument();
-  expect(screen.getByText("0755-86336966")).toBeInTheDocument();
+  expect(screen.queryByText("lanyanfeng@fzzsedu.cn")).not.toBeInTheDocument();
+  expect(screen.getAllByText("0755-86336966").length).toBeGreaterThan(0);
   expect(screen.getByAltText("万象元生微信咨询二维码")).toHaveAttribute("src", "/qrcode.png");
   expect(container.querySelector(".quote-contact")).not.toHaveTextContent("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901");
   expect(container.querySelector(".quote-contact")).not.toHaveTextContent("互联网信息服务；人工智能技术研发；影视内容制作；软件开发");
