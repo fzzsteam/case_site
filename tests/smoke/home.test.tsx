@@ -43,7 +43,7 @@ it("uses two split mist layers for the opening reveal", () => {
 it("renders the about section with company information and services under the cases chapter", () => {
   const { container } = render(<HomePage />);
   expect(screen.getByRole("heading", { level: 2, name: "关于我们" })).toBeInTheDocument();
-  expect(screen.getByText(/深圳市方直智胜科技有限公司成立于深圳/)).toBeInTheDocument();
+  expect(screen.getByText(/深圳市方直智胜科技有限公司系A股上市公司方直科技/)).toBeInTheDocument();
   expect(screen.getByText("深圳市方直智胜科技有限公司")).toBeInTheDocument();
   expect(screen.getAllByText("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901").length).toBeGreaterThan(0);
   expect(screen.queryByText("粤ICP备2026044251号")).not.toBeInTheDocument();
