@@ -1,18 +1,19 @@
 import { caseStudies, caseVideos } from "@/content/cases";
 
-it("contains all ten uploaded projects", () => {
-  expect(caseStudies).toHaveLength(10);
-  expect(caseStudies.map((item) => item.title)).toEqual(expect.arrayContaining(["疯狂的荔枝", "苏东坡的荔枝狂想", "阳仔学英语", "阳光小镇"]));
+it("contains all eleven uploaded projects", () => {
+  expect(caseStudies).toHaveLength(11);
+  expect(caseStudies.map((item) => item.title)).toEqual(expect.arrayContaining(["漢·生生不息", "疯狂的荔枝", "苏东坡的荔枝狂想", "阳仔学英语", "阳光小镇"]));
 });
 
 it("provides one continuous previous and next video sequence", () => {
-  expect(caseVideos).toHaveLength(17);
-  expect(caseVideos[0]).toEqual(expect.objectContaining({ projectTitle: "苏东坡的荔枝狂想", orientation: "landscape" }));
+  expect(caseVideos).toHaveLength(18);
+  expect(caseVideos[0]).toEqual(expect.objectContaining({ projectTitle: "漢·生生不息", orientation: "landscape" }));
   expect(caseVideos.at(-1)).toEqual(expect.objectContaining({ projectTitle: "阳光小镇", orientation: "landscape" }));
 });
 
 it("groups cases in the requested editorial order", () => {
   expect(caseStudies.map((item) => item.title)).toEqual([
+    "漢·生生不息",
     "苏东坡的荔枝狂想",
     "苏东坡带货增城荔枝",
     "苏东坡与六榕寺",

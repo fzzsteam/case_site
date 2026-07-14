@@ -13,7 +13,7 @@ it("renders the primary heading", () => {
 
 it("shows case titles with project descriptions underneath", () => {
   const { container } = render(<HomePage />);
-  expect(container.querySelectorAll(".editorial-caption h3")).toHaveLength(10);
+  expect(container.querySelectorAll(".editorial-caption h3")).toHaveLength(11);
   expect(screen.getByRole("heading", { level: 3, name: "苏东坡带货增城荔枝" })).toBeInTheDocument();
   expect(screen.getByText("广州六榕寺文旅宣传片。")).toBeInTheDocument();
   expect(screen.getByText("增城荔枝创意广告。")).toBeInTheDocument();
