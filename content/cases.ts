@@ -11,7 +11,7 @@ const project = (folder: string, data: Omit<CaseStudy, "coverPath" | "episodes">
 });
 
 export const caseStudies: CaseStudy[] = [
-  project("汉生生不息", { slug: "han-shengsheng", title: "漢·生生不息", category: "宣传片", summary: "南阳汉画馆合作案例。" }, ["case1.mp4"], ["landscape"]),
+  project("汉生生不息", { slug: "han-shengsheng", title: "漢·生生不息", category: "宣传片", summary: "南阳汉画馆合作案例。" }, ["case2.mp4"], ["landscape"]),
   project("苏东坡的荔枝狂想", { slug: "sudongpo-litchi", title: "苏东坡的荔枝狂想", category: "宣传片", summary: "增城文旅宣传片" }, ["case1.mp4"], ["landscape"]),
   project("苏东坡带货视频", { slug: "sudongpo-commerce", title: "苏东坡带货增城荔枝", category: "广告片", summary: "增城荔枝创意广告。" }, ["case1.mp4", "case2.mp4"], ["portrait", "landscape"], ["竖屏版", "横屏版"]),
   project("苏东坡与六榕寺", { slug: "sudongpo-liurong", title: "苏东坡与六榕寺", category: "宣传片", summary: "广州六榕寺文旅宣传片。" }, ["case1.mp4"], ["landscape"]),
