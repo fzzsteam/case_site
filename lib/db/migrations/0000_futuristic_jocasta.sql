@@ -14,8 +14,8 @@ CREATE TABLE `cases` (
 	`summary` text NOT NULL,
 	`cover_path` varchar(500) NOT NULL,
 	`sort_order` int NOT NULL DEFAULT 0,
-	`created_at` timestamp NOT NULL DEFAULT (now()),
-	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `cases_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
