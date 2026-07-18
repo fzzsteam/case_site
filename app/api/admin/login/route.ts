@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAdminPassword } from "@/lib/auth/credentials";
-import { createSessionToken, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
+import { createSessionToken, SESSION_COOKIE_NAME, SESSION_COOKIE_SECURE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: SESSION_COOKIE_SECURE,
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE_SECONDS,
     path: "/",
