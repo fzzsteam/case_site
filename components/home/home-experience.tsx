@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Film, Landmark, Mountain, Play, Radio, X } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { caseStudies, caseVideos, type CaseCategory } from "@/content/cases";
+import { buildCaseVideos, type CaseCategory, type CaseStudy } from "@/lib/cases/types";
 import { siteConfig } from "@/content/site";
 import { QuotePanel } from "./quote-panel";
 const driftClouds = [
@@ -13,7 +13,6 @@ const driftClouds = [
   ["/ink/cloud3.png", "drift-10"],
 ] as const;
 
-const categories: Array<"全部" | CaseCategory> = ["全部", "宣传片", "广告片", "短剧", "IP创造"];
 const serviceItems = [
   { title: "城市文旅 AI 宣传片", icon: Mountain }, { title: "文旅短视频 / 微短剧代运营", icon: Radio },
   { title: "博物馆文物数字化", icon: Landmark }, { title: "乡村文旅 / 非遗数字化", icon: Film },
@@ -40,15 +39,17 @@ function HeroMist({ depth }: { depth: "back" | "front" }) {
   </div>;
 }
 
-export function HomeExperience() {
+export function HomeExperience({ caseStudies }: { caseStudies: CaseStudy[] }) {
   const root = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState<"全部" | CaseCategory>("全部");
   const [activeVideo, setActiveVideo] = useState<number | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoState, setVideoState] = useState<"idle" | "loading" | "error">("idle");
+  const categories: Array<"全部" | CaseCategory> = ["全部", ...Array.from(new Set(caseStudies.map((item) => item.category)))];
+  const caseVideos = buildCaseVideos(caseStudies);
   const filtered = caseStudies.filter((item) => category === "全部" || item.category === category);
   const currentVideo = activeVideo === null ? null : caseVideos[activeVideo];
-  const currentCaseVideos = currentVideo ? caseVideos.filter((video) => video.projectSlug === currentVideo.projectSlug) : [];
+  const currentCaseVideos = currentVideo ? caseVideos.filter((video) => video.projectId === currentVideo.projectId) : [];
   const currentCasePosition = currentVideo ? currentCaseVideos.findIndex((video) => video.videoPath === currentVideo.videoPath) : -1;
   const previousCaseVideo = currentCasePosition > 0 ? currentCaseVideos[currentCasePosition - 1] : null;
   const nextCaseVideo = currentCasePosition >= 0 && currentCasePosition < currentCaseVideos.length - 1 ? currentCaseVideos[currentCasePosition + 1] : null;
@@ -107,8 +108,8 @@ export function HomeExperience() {
     <section id="cases" className="cases-chapter story-chapter">
       <header className="chapter-heading"><span>PROJECTS</span><h2>案例作品</h2></header>
       <div className="case-filters story-filters">{categories.map((item) => <button className={category === item ? "active" : ""} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div>
-      <div className="case-editorial-grid">{filtered.map((item, index) => <article className={`editorial-case editorial-${index % 5}`} key={item.slug}>
-        <button className="editorial-cover" onClick={() => loadVideo(caseVideos.findIndex((video) => video.projectSlug === item.slug))}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span><Play fill="currentColor"/></span></button>
+      <div className="case-editorial-grid">{filtered.map((item, index) => <article className={`editorial-case editorial-${index % 5}`} key={item.id}>
+        <button className="editorial-cover" onClick={() => loadVideo(caseVideos.findIndex((video) => video.projectId === item.id))}><img src={coverUrl(item.coverPath)} alt={`${item.title}封面`}/><span><Play fill="currentColor"/></span></button>
         <div className="editorial-caption"><small>{item.category}</small><h3>{item.title}</h3><p>{item.summary}</p></div>
       </article>)}</div>
       <header className="service-heading"><span>SERVICES</span><h3>服务内容</h3></header>

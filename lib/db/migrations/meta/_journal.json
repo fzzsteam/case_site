@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1784346504234,
+      "tag": "0000_futuristic_jocasta",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1784373910177,
+      "tag": "0001_wise_mulholland_black",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1784377801005,
+      "tag": "0002_loving_wasp",
+      "breakpoints": true
+    }
+  ]
+}
