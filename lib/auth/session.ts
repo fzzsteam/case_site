@@ -1,6 +1,9 @@
 export const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const SESSION_MAX_AGE_SECONDS = SESSION_TTL_MS / 1000;
+// 站点暂时只有 HTTP，没有证书；Secure cookie 在 HTTP 下会被浏览器丢弃导致登录态存不住。
+// 上了 HTTPS 之后把这个改回 true。
+export const SESSION_COOKIE_SECURE = false;
 
 function toBase64Url(bytes: Uint8Array): string {
   let binary = "";

@@ -6,6 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function copyWithFallback(text: string) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -24,11 +39,17 @@ export default function AdminLoginPage() {
   async function copyInitialPassword() {
     if (!initialPassword) return;
     try {
-      await navigator.clipboard.writeText(initialPassword);
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(initialPassword);
+      } else {
+        copyWithFallback(initialPassword);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard unavailable, ignore
+      copyWithFallback(initialPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     }
   }
 
