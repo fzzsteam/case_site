@@ -10,6 +10,11 @@ function log(message: string) {
   console.log(`[acme ${new Date().toISOString()}] ${message}`);
 }
 
+// YYYYMMDDHHmmss（UTC），用作证书名后缀
+function formatTimestamp(date: Date): string {
+  return date.toISOString().replace(/[-:T]/g, "").replace(/\.\d+Z$/, "");
+}
+
 type EnabledAcmeConfig = Extract<ReturnType<typeof getAcmeConfig>, { enabled: true }>;
 
 async function bindAndCleanup(config: EnabledAcmeConfig, fullchain: string, privateKey: string): Promise<string> {
@@ -23,9 +28,9 @@ async function bindAndCleanup(config: EnabledAcmeConfig, fullchain: string, priv
   }
   const oldRawCertId = ingress.certIds ? fromSaeCertId(ingress.certIds.split(",")[0]) : null;
 
-  // 名称带上此次上传时刻的毫秒时间戳，避免同名证书在 CAS 里重复上传报 NameRepeat；
+  // 名称带上此次上传时刻的年月日时分秒，避免同名证书在 CAS 里重复上传报 NameRepeat；
   // 用固定的到期日期做后缀不够，绑定失败重试时到期日期不会变，还是会撞名
-  const uniqueCertName = `${certName}-${Date.now()}`;
+  const uniqueCertName = `${certName}-${formatTimestamp(new Date())}`;
 
   log("上传证书到数字证书管理服务（CAS）...");
   const certId = await uploadCertificate(accessKeyId, accessKeySecret, uniqueCertName, fullchain, privateKey);
