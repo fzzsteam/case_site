@@ -1,6 +1,7 @@
 import { syncCertificate } from "@/lib/acme/renew";
 import { createChallengeRecord, removeChallengeRecord } from "@/lib/acme/dns";
-import { bindListenerCertificate, deleteCertificate, getListenerCertificateId, uploadCertificate } from "@/lib/acme/alb";
+import { deleteCertificate, uploadCertificate } from "@/lib/acme/alb";
+import { findAlbIngress, updateIngressCertIds } from "@/lib/acme/sae";
 import { getCachedCertificate, saveCertificate, updateCertId } from "@/lib/acme/store";
 
 const { mockAuto, mockCreatePrivateKey, mockCreateCsr, mockReadCertificateInfo } = vi.hoisted(() => ({
@@ -30,8 +31,13 @@ vi.mock("@/lib/acme/dns", () => ({
 vi.mock("@/lib/acme/alb", () => ({
   uploadCertificate: vi.fn(),
   deleteCertificate: vi.fn(),
-  getListenerCertificateId: vi.fn(),
-  bindListenerCertificate: vi.fn(),
+}));
+
+vi.mock("@/lib/acme/sae", () => ({
+  findAlbIngress: vi.fn(),
+  updateIngressCertIds: vi.fn(),
+  toSaeCertId: (rawCertId: string) => `${rawCertId}-cn-hangzhou`,
+  fromSaeCertId: (saeCertId: string) => saeCertId.replace(/-cn-hangzhou$/, ""),
 }));
 
 vi.mock("@/lib/acme/store", () => ({
@@ -40,20 +46,20 @@ vi.mock("@/lib/acme/store", () => ({
   updateCertId: vi.fn(),
 }));
 
-const ENV_KEYS = ["ALIYUN_ACCESS_KEY_ID", "ALIYUN_ACCESS_KEY_SECRET", "ALB_REGION_ID", "ALB_LISTENER_ID", "ACME_DOMAIN", "ACME_RENEW_BEFORE_DAYS"] as const;
+const ENV_KEYS = ["ALIYUN_ACCESS_KEY_ID", "ALIYUN_ACCESS_KEY_SECRET", "ALB_REGION_ID", "ALB_INSTANCE_ID", "SAE_NAMESPACE_ID", "ACME_DOMAIN", "ACME_RENEW_BEFORE_DAYS"] as const;
 
 function enableConfig() {
   process.env.ALIYUN_ACCESS_KEY_ID = "test-key";
   process.env.ALIYUN_ACCESS_KEY_SECRET = "test-secret";
   process.env.ALB_REGION_ID = "cn-shenzhen";
-  process.env.ALB_LISTENER_ID = "lsn-test";
+  process.env.ALB_INSTANCE_ID = "alb-test";
   process.env.ACME_DOMAIN = "fzzsai.com";
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   for (const key of ENV_KEYS) delete process.env[key];
-  vi.mocked(getListenerCertificateId).mockResolvedValue("old-cert-id");
+  vi.mocked(findAlbIngress).mockResolvedValue({ ingressId: 42, certIds: "old-cert-id-cn-hangzhou" });
   vi.mocked(deleteCertificate).mockResolvedValue(undefined);
 });
 
@@ -74,12 +80,12 @@ it("reuses a cached certificate that is not close to expiry, without calling Let
   expect(mockAuto).not.toHaveBeenCalled();
   expect(saveCertificate).not.toHaveBeenCalled();
   expect(uploadCertificate).toHaveBeenCalledWith("test-key", "test-secret", expect.stringMatching(/^fzzsai\.com-wildcard-\d+$/), "cached-fullchain", "cached-key");
-  expect(bindListenerCertificate).toHaveBeenCalledWith("test-key", "test-secret", "cn-shenzhen", "lsn-test", "new-cert-id");
+  expect(updateIngressCertIds).toHaveBeenCalledWith("test-key", "test-secret", "cn-shenzhen", 42, "new-cert-id-cn-hangzhou");
   expect(deleteCertificate).toHaveBeenCalledWith("test-key", "test-secret", "old-cert-id");
   expect(updateCertId).toHaveBeenCalledWith("fzzsai.com", "new-cert-id");
 });
 
-it("skips upload entirely when the ALB listener already has the cached certificate bound", async () => {
+it("skips upload entirely when the gateway route already has the cached certificate bound", async () => {
   enableConfig();
   const notAfter = new Date(Date.now() + 60 * 86_400_000);
   vi.mocked(getCachedCertificate).mockResolvedValue({ fullchain: "cached-fullchain", privateKey: "cached-key", notAfter, certId: "old-cert-id" });
@@ -88,7 +94,7 @@ it("skips upload entirely when the ALB listener already has the cached certifica
 
   expect(mockAuto).not.toHaveBeenCalled();
   expect(uploadCertificate).not.toHaveBeenCalled();
-  expect(bindListenerCertificate).not.toHaveBeenCalled();
+  expect(updateIngressCertIds).not.toHaveBeenCalled();
   expect(updateCertId).not.toHaveBeenCalled();
 });
 
@@ -110,7 +116,7 @@ it("issues a new certificate via Let's Encrypt when nothing is cached", async ()
   );
   expect(saveCertificate).toHaveBeenCalledWith("fzzsai.com", expect.stringContaining("BEGIN CERTIFICATE"), "private-key-bytes", notAfter);
   expect(uploadCertificate).toHaveBeenCalledWith("test-key", "test-secret", expect.stringMatching(/^fzzsai\.com-wildcard-\d+$/), expect.stringContaining("BEGIN CERTIFICATE"), "private-key-bytes");
-  expect(bindListenerCertificate).toHaveBeenCalledWith("test-key", "test-secret", "cn-shenzhen", "lsn-test", "new-cert-id");
+  expect(updateIngressCertIds).toHaveBeenCalledWith("test-key", "test-secret", "cn-shenzhen", 42, "new-cert-id-cn-hangzhou");
   expect(updateCertId).toHaveBeenCalledWith("fzzsai.com", "new-cert-id");
 });
 
@@ -128,6 +134,21 @@ it("issues a new certificate when the cached one is close to expiry", async () =
 
   expect(mockAuto).toHaveBeenCalled();
   expect(saveCertificate).toHaveBeenCalled();
+});
+
+it("throws (and syncCertificate swallows it) when no matching gateway route is found", async () => {
+  enableConfig();
+  vi.mocked(getCachedCertificate).mockResolvedValue(null);
+  mockCreatePrivateKey.mockResolvedValue(Buffer.from("account-key"));
+  mockCreateCsr.mockResolvedValue([Buffer.from("private-key-bytes"), Buffer.from("csr-bytes")]);
+  mockAuto.mockResolvedValue("fullchain");
+  mockReadCertificateInfo.mockReturnValue({ notAfter: new Date() });
+  vi.mocked(findAlbIngress).mockResolvedValue(null);
+
+  await expect(syncCertificate()).resolves.toBeUndefined();
+
+  expect(uploadCertificate).not.toHaveBeenCalled();
+  expect(updateIngressCertIds).not.toHaveBeenCalled();
 });
 
 it("wires the DNS-01 challenge callbacks to createChallengeRecord and removeChallengeRecord", async () => {

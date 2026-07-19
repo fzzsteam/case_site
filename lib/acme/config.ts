@@ -8,7 +8,9 @@ type AcmeConfig =
       accessKeyId: string;
       accessKeySecret: string;
       albRegionId: string;
-      albListenerId: string;
+      albInstanceId: string;
+      saeNamespaceId: string;
+      listenerPort: string;
       certName: string;
       email: string | undefined;
       renewBeforeDays: number;
@@ -20,9 +22,9 @@ export function getAcmeConfig(): AcmeConfig {
   const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
   const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
   const albRegionId = process.env.ALB_REGION_ID;
-  const albListenerId = process.env.ALB_LISTENER_ID;
+  const albInstanceId = process.env.ALB_INSTANCE_ID;
 
-  if (!accessKeyId || !accessKeySecret || !albRegionId || !albListenerId) return { enabled: false };
+  if (!accessKeyId || !accessKeySecret || !albRegionId || !albInstanceId) return { enabled: false };
 
   return {
     enabled: true,
@@ -30,7 +32,10 @@ export function getAcmeConfig(): AcmeConfig {
     accessKeyId,
     accessKeySecret,
     albRegionId,
-    albListenerId,
+    albInstanceId,
+    // SAE 命名空间默认等于地域 ID（默认命名空间的规则），自定义命名空间需要显式配置
+    saeNamespaceId: process.env.SAE_NAMESPACE_ID || albRegionId,
+    listenerPort: process.env.ALB_LISTENER_PORT || "443",
     certName: process.env.ACME_CERT_NAME || `${domain}-wildcard`,
     email: process.env.ACME_EMAIL,
     renewBeforeDays: process.env.ACME_RENEW_BEFORE_DAYS ? Number(process.env.ACME_RENEW_BEFORE_DAYS) : 30,

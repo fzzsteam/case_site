@@ -41,7 +41,13 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 ## HTTPS 证书自动续签（可选）
 
-如果域名走阿里云 ALB 转发到本应用（ALB 上配置 HTTPS 监听），可以配置 `ALIYUN_ACCESS_KEY_ID`/`ALIYUN_ACCESS_KEY_SECRET`/`ALB_REGION_ID`/`ALB_LISTENER_ID` 四个环境变量（见 `.env.example`），应用启动时会自动向 Let's Encrypt 申请通配符证书（DNS-01，走阿里云云解析）、上传到数字证书管理服务、绑定到 ALB 监听，并按周期（默认 12 小时检查一次）自动续签。证书本身缓存在 MySQL 的 `acme_certificates` 表里，重新部署不会触发重复签发（Let's Encrypt 对同一组域名有每 7 天最多 5 次的限制），只有距离到期不足 30 天时才会真正发起续签。相关代码在 `lib/acme/`，逻辑由 `instrumentation.ts` 在应用启动时触发，不需要额外的容器或脚本。不配置这四个变量时该功能完全不生效，不影响正常部署。
+如果域名是通过 SAE 的"网关路由"转发到 ALB 的（SAE 控制台里叫"网关路由"，后端 API 其实是 Ingress），可以配置 `ALIYUN_ACCESS_KEY_ID`/`ALIYUN_ACCESS_KEY_SECRET`/`ALB_REGION_ID`/`ALB_INSTANCE_ID` 等环境变量（见 `.env.example`），应用启动时会自动向 Let's Encrypt 申请通配符证书（DNS-01，走阿里云云解析）、上传到数字证书管理服务、通过 SAE 的 Ingress 接口更新网关路由绑定的证书，并按周期（默认 12 小时检查一次）自动续签。
+
+**证书必须通过 SAE 的 Ingress 接口更新，不能直接改 ALB 监听器**——SAE 会周期性把自己保存的路由配置（含证书）同步覆盖到 ALB 上，直接改 ALB 监听器的证书会在毫无提示的情况下被 SAE 改回去。
+
+证书本身缓存在 MySQL 的 `acme_certificates` 表里，重新部署不会触发重复签发（Let's Encrypt 对同一组域名有每 7 天最多 5 次的限制），也不会重复上传/绑定（每次启动会先检查 SAE 网关路由上绑定的证书是否已经是数据库里缓存的这张，一致就跳过），只有距离到期不足 30 天、或者发现绑定的证书对不上时才会真正发起续签/重新绑定。相关代码在 `lib/acme/`，逻辑由 `instrumentation.ts` 在应用启动时触发，不需要额外的容器或脚本。不配置这些变量时该功能完全不生效，不影响正常部署。
+
+需要的权限：`AliyunDNSFullAccess`（DNS-01 校验）、`AliyunYundunCertFullAccess`（数字证书管理服务，证书上传/删除）、`AliyunSAEFullAccess`（更新网关路由绑定的证书）。
 
 ## 验证
 

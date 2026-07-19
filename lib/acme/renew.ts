@@ -3,22 +3,25 @@ import * as acme from "acme-client";
 import { getAcmeConfig } from "./config";
 import { getCachedCertificate, saveCertificate, updateCertId } from "./store";
 import { createChallengeRecord, removeChallengeRecord } from "./dns";
-import { bindListenerCertificate, deleteCertificate, getListenerCertificateId, uploadCertificate } from "./alb";
+import { deleteCertificate, uploadCertificate } from "./alb";
+import { findAlbIngress, fromSaeCertId, toSaeCertId, updateIngressCertIds } from "./sae";
 
 function log(message: string) {
   console.log(`[acme ${new Date().toISOString()}] ${message}`);
 }
 
-async function bindAndCleanup(
-  accessKeyId: string,
-  accessKeySecret: string,
-  regionId: string,
-  listenerId: string,
-  certName: string,
-  fullchain: string,
-  privateKey: string,
-): Promise<string> {
-  const oldCertId = await getListenerCertificateId(accessKeyId, accessKeySecret, regionId, listenerId).catch(() => null);
+type EnabledAcmeConfig = Extract<ReturnType<typeof getAcmeConfig>, { enabled: true }>;
+
+async function bindAndCleanup(config: EnabledAcmeConfig, fullchain: string, privateKey: string): Promise<string> {
+  const { accessKeyId, accessKeySecret, albRegionId, albInstanceId, saeNamespaceId, listenerPort, certName } = config;
+
+  const ingress = await findAlbIngress(accessKeyId, accessKeySecret, albRegionId, saeNamespaceId, albInstanceId, listenerPort);
+  if (!ingress) {
+    throw new Error(
+      `在 SAE 命名空间 ${saeNamespaceId} 下没找到绑定 ALB 实例 ${albInstanceId}、监听端口 ${listenerPort} 的网关路由，请检查 SAE_NAMESPACE_ID / ALB_INSTANCE_ID / ALB_LISTENER_PORT 配置`,
+    );
+  }
+  const oldRawCertId = ingress.certIds ? fromSaeCertId(ingress.certIds.split(",")[0]) : null;
 
   // 名称带上此次上传时刻的毫秒时间戳，避免同名证书在 CAS 里重复上传报 NameRepeat；
   // 用固定的到期日期做后缀不够，绑定失败重试时到期日期不会变，还是会撞名
@@ -28,20 +31,20 @@ async function bindAndCleanup(
   const certId = await uploadCertificate(accessKeyId, accessKeySecret, uniqueCertName, fullchain, privateKey);
   log(`新证书 ID: ${certId}`);
 
-  log(`更新 ALB 监听器 (${listenerId}) 的默认证书...`);
-  await bindListenerCertificate(accessKeyId, accessKeySecret, regionId, listenerId, certId);
-  log(`完成，ALB 监听器 ${listenerId} 现在用的证书是 ${certId}（名称: ${uniqueCertName}）`);
+  log(`更新 SAE 网关路由 (ingressId=${ingress.ingressId}) 的证书...`);
+  await updateIngressCertIds(accessKeyId, accessKeySecret, albRegionId, ingress.ingressId, toSaeCertId(certId));
+  log(`完成，网关路由现在用的证书是 ${certId}（名称: ${uniqueCertName}）`);
 
-  if (oldCertId && oldCertId !== certId) {
-    log(`清理旧证书 ${oldCertId} ...`);
-    await deleteCertificate(accessKeyId, accessKeySecret, oldCertId).catch((error) => log(`旧证书删除失败，可以忽略，不影响新证书生效: ${error}`));
+  if (oldRawCertId && oldRawCertId !== certId) {
+    log(`清理旧证书 ${oldRawCertId} ...`);
+    await deleteCertificate(accessKeyId, accessKeySecret, oldRawCertId).catch((error) => log(`旧证书删除失败，可以忽略，不影响新证书生效: ${error}`));
   }
 
   return certId;
 }
 
-async function issueNewCertificate(config: Extract<ReturnType<typeof getAcmeConfig>, { enabled: true }>) {
-  const { domain, accessKeyId, accessKeySecret, albRegionId, albListenerId, certName, email } = config;
+async function issueNewCertificate(config: EnabledAcmeConfig) {
+  const { domain, accessKeyId, accessKeySecret, email } = config;
 
   log("向 Let's Encrypt 申请新证书（DNS-01，走阿里云云解析）...");
 
@@ -78,14 +81,14 @@ async function issueNewCertificate(config: Extract<ReturnType<typeof getAcmeConf
   log(`签发成功，到期时间: ${info.notAfter.toISOString()}，写入数据库...`);
   await saveCertificate(domain, fullchain, privateKey, info.notAfter);
 
-  const certId = await bindAndCleanup(accessKeyId, accessKeySecret, albRegionId, albListenerId, certName, fullchain, privateKey);
+  const certId = await bindAndCleanup(config, fullchain, privateKey);
   await updateCertId(domain, certId);
 }
 
 export async function syncCertificate(): Promise<void> {
   const config = getAcmeConfig();
   if (!config.enabled) {
-    log("未配置 ALIYUN_ACCESS_KEY_ID/ALIYUN_ACCESS_KEY_SECRET/ALB_REGION_ID/ALB_LISTENER_ID，跳过证书自动续签");
+    log("未配置 ALIYUN_ACCESS_KEY_ID/ALIYUN_ACCESS_KEY_SECRET/ALB_REGION_ID/ALB_INSTANCE_ID，跳过证书自动续签");
     return;
   }
 
@@ -98,13 +101,14 @@ export async function syncCertificate(): Promise<void> {
       if (remainingDays > config.renewBeforeDays) {
         log(`数据库里的证书还有 ${remainingDays} 天到期（超过阈值 ${config.renewBeforeDays} 天），直接复用，不请求 Let's Encrypt`);
 
-        const currentCertId = await getListenerCertificateId(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.albListenerId).catch(() => null);
-        if (cached.certId && currentCertId === cached.certId) {
-          log(`ALB 监听器上已经绑定的就是这张证书（${cached.certId}），无需重复上传`);
+        const ingress = await findAlbIngress(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.saeNamespaceId, config.albInstanceId, config.listenerPort);
+        const currentRawCertId = ingress?.certIds ? fromSaeCertId(ingress.certIds.split(",")[0]) : null;
+        if (cached.certId && currentRawCertId === cached.certId) {
+          log(`SAE 网关路由上已经绑定的就是这张证书（${cached.certId}），无需重复上传`);
           return;
         }
 
-        const certId = await bindAndCleanup(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.albListenerId, config.certName, cached.fullchain, cached.privateKey);
+        const certId = await bindAndCleanup(config, cached.fullchain, cached.privateKey);
         await updateCertId(config.domain, certId);
         return;
       }
