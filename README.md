@@ -39,6 +39,10 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 数据库结构定义在 `lib/db/schema.ts`，迁移文件在 `lib/db/migrations/`，可以用 `npm run db:generate` 基于 schema 重新生成迁移。
 
+## HTTPS 证书自动续签（可选）
+
+如果域名走阿里云 ALB 转发到本应用（ALB 上配置 HTTPS 监听），可以配置 `ALIYUN_ACCESS_KEY_ID`/`ALIYUN_ACCESS_KEY_SECRET`/`ALB_REGION_ID`/`ALB_LISTENER_ID` 四个环境变量（见 `.env.example`），应用启动时会自动向 Let's Encrypt 申请通配符证书（DNS-01，走阿里云云解析）、上传到数字证书管理服务、绑定到 ALB 监听，并按周期（默认 12 小时检查一次）自动续签。证书本身缓存在 MySQL 的 `acme_certificates` 表里，重新部署不会触发重复签发（Let's Encrypt 对同一组域名有每 7 天最多 5 次的限制），只有距离到期不足 30 天时才会真正发起续签。相关代码在 `lib/acme/`，逻辑由 `instrumentation.ts` 在应用启动时触发，不需要额外的容器或脚本。不配置这四个变量时该功能完全不生效，不影响正常部署。
+
 ## 验证
 
 ```bash

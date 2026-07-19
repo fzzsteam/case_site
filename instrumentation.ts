@@ -13,4 +13,7 @@ export async function register() {
   } catch (error) {
     console.error("Database startup check failed:", error);
   }
+
+  const { startAcmeRenewalLoop } = await import("@/lib/acme/renew");
+  startAcmeRenewalLoop();
 }

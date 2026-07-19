@@ -9,6 +9,14 @@ export const adminCredentials = mysqlTable("admin_credentials", {
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
+export const acmeCertificates = mysqlTable("acme_certificates", {
+  domain: varchar("domain", { length: 255 }).primaryKey(),
+  fullchain: text("fullchain").notNull(),
+  privateKey: text("private_key").notNull(),
+  notAfter: timestamp("not_after").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+});
+
 export const categories = mysqlTable("categories", {
   id: char("id", { length: 36 }).primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),
