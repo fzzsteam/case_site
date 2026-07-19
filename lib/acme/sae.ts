@@ -26,7 +26,13 @@ export async function findAlbIngress(
   const response = await client.listIngresses(new ListIngressesRequest({ namespaceId, pageSize: 50 }));
   const list = response.body?.data?.ingressList ?? [];
   const match = list.find((item) => item.loadBalanceType === "alb" && item.slbId === albInstanceId && item.listenerPort === listenerPort);
-  if (!match || match.id === undefined || match.id === null) return null;
+  if (!match || match.id === undefined || match.id === null) {
+    console.log(
+      `[acme ${new Date().toISOString()}] 命名空间 ${namespaceId} 下查到 ${list.length} 条网关路由，没有一条匹配 albInstanceId=${albInstanceId} listenerPort=${listenerPort}：`,
+      JSON.stringify(list.map((item) => ({ id: item.id, description: item.description, loadBalanceType: item.loadBalanceType, slbId: item.slbId, listenerPort: item.listenerPort }))),
+    );
+    return null;
+  }
   return { ingressId: match.id, certIds: match.certIds ?? null };
 }
 
