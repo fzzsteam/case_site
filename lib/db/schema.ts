@@ -14,6 +14,7 @@ export const acmeCertificates = mysqlTable("acme_certificates", {
   fullchain: text("fullchain").notNull(),
   privateKey: text("private_key").notNull(),
   notAfter: timestamp("not_after").notNull(),
+  certId: varchar("cert_id", { length: 64 }),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 

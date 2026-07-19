@@ -1,0 +1,1 @@
+ALTER TABLE `acme_certificates` ADD `cert_id` varchar(64);

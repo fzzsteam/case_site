@@ -1,7 +1,7 @@
 import "server-only";
 import * as acme from "acme-client";
 import { getAcmeConfig } from "./config";
-import { getCachedCertificate, saveCertificate } from "./store";
+import { getCachedCertificate, saveCertificate, updateCertId } from "./store";
 import { createChallengeRecord, removeChallengeRecord } from "./dns";
 import { bindListenerCertificate, deleteCertificate, getListenerCertificateId, uploadCertificate } from "./alb";
 
@@ -17,21 +17,27 @@ async function bindAndCleanup(
   certName: string,
   fullchain: string,
   privateKey: string,
-) {
+): Promise<string> {
   const oldCertId = await getListenerCertificateId(accessKeyId, accessKeySecret, regionId, listenerId).catch(() => null);
 
+  // 名称带上此次上传时刻的毫秒时间戳，避免同名证书在 CAS 里重复上传报 NameRepeat；
+  // 用固定的到期日期做后缀不够，绑定失败重试时到期日期不会变，还是会撞名
+  const uniqueCertName = `${certName}-${Date.now()}`;
+
   log("上传证书到数字证书管理服务（CAS）...");
-  const certId = await uploadCertificate(accessKeyId, accessKeySecret, certName, fullchain, privateKey);
+  const certId = await uploadCertificate(accessKeyId, accessKeySecret, uniqueCertName, fullchain, privateKey);
   log(`新证书 ID: ${certId}`);
 
   log(`更新 ALB 监听器 (${listenerId}) 的默认证书...`);
   await bindListenerCertificate(accessKeyId, accessKeySecret, regionId, listenerId, certId);
-  log(`完成，ALB 监听器 ${listenerId} 现在用的证书是 ${certId}（名称: ${certName}）`);
+  log(`完成，ALB 监听器 ${listenerId} 现在用的证书是 ${certId}（名称: ${uniqueCertName}）`);
 
   if (oldCertId && oldCertId !== certId) {
     log(`清理旧证书 ${oldCertId} ...`);
     await deleteCertificate(accessKeyId, accessKeySecret, oldCertId).catch((error) => log(`旧证书删除失败，可以忽略，不影响新证书生效: ${error}`));
   }
+
+  return certId;
 }
 
 async function issueNewCertificate(config: Extract<ReturnType<typeof getAcmeConfig>, { enabled: true }>) {
@@ -72,7 +78,8 @@ async function issueNewCertificate(config: Extract<ReturnType<typeof getAcmeConf
   log(`签发成功，到期时间: ${info.notAfter.toISOString()}，写入数据库...`);
   await saveCertificate(domain, fullchain, privateKey, info.notAfter);
 
-  await bindAndCleanup(accessKeyId, accessKeySecret, albRegionId, albListenerId, certName, fullchain, privateKey);
+  const certId = await bindAndCleanup(accessKeyId, accessKeySecret, albRegionId, albListenerId, certName, fullchain, privateKey);
+  await updateCertId(domain, certId);
 }
 
 export async function syncCertificate(): Promise<void> {
@@ -90,7 +97,15 @@ export async function syncCertificate(): Promise<void> {
       const remainingDays = Math.floor((cached.notAfter.getTime() - Date.now()) / 86_400_000);
       if (remainingDays > config.renewBeforeDays) {
         log(`数据库里的证书还有 ${remainingDays} 天到期（超过阈值 ${config.renewBeforeDays} 天），直接复用，不请求 Let's Encrypt`);
-        await bindAndCleanup(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.albListenerId, config.certName, cached.fullchain, cached.privateKey);
+
+        const currentCertId = await getListenerCertificateId(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.albListenerId).catch(() => null);
+        if (cached.certId && currentCertId === cached.certId) {
+          log(`ALB 监听器上已经绑定的就是这张证书（${cached.certId}），无需重复上传`);
+          return;
+        }
+
+        const certId = await bindAndCleanup(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.albListenerId, config.certName, cached.fullchain, cached.privateKey);
+        await updateCertId(config.domain, certId);
         return;
       }
       log(`数据库里的证书还有 ${remainingDays} 天到期，进入续签窗口（阈值 ${config.renewBeforeDays} 天），重新申请`);

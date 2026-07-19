@@ -29,6 +29,13 @@
       "when": 1784427902224,
       "tag": "0003_minor_gertrude_yorkes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1784430847557,
+      "tag": "0004_shiny_firebird",
+      "breakpoints": true
     }
   ]
 }
