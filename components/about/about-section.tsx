@@ -13,12 +13,18 @@ export function AboutSection() {
       <h2>关于我们</h2>
     </header>
     <div className="about-layout">
-      <p className="about-intro">{siteConfig.companyIntro}</p>
-      <dl className="company-facts">
-        <div><dt>公司名称</dt><dd>{siteConfig.companyName}</dd></div>
-        <div><dt>办公地址</dt><dd>{siteConfig.address}</dd></div>
-        <div><dt>企业愿景</dt><dd>{siteConfig.companyVision}</dd></div>
-      </dl>
+      <div className="about-profile-copy">
+        <h3 className="about-column-title">公司简介</h3>
+        <p className="about-intro">{siteConfig.companyIntro}</p>
+      </div>
+      <div className="company-facts-panel">
+        <h3 className="about-column-title">企业信息</h3>
+        <dl className="company-facts">
+          <div><dt>公司名称</dt><dd>{siteConfig.companyName}</dd></div>
+          <div><dt>办公地址</dt><dd>{siteConfig.address}</dd></div>
+          <div><dt>企业愿景</dt><dd>{siteConfig.companyVision}</dd></div>
+        </dl>
+      </div>
     </div>
     <div className="closing-cta">
       <div className="closing-cta-layout">
