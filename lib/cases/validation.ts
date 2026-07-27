@@ -4,12 +4,14 @@ import { validateMediaPath } from "@/lib/oss/path";
 export const episodeInputSchema = z.object({
   videoPath: z.string().min(1),
   orientation: z.enum(["landscape", "portrait"]),
+  durationSeconds: z.number().int().positive().nullable().optional(),
 });
 
 export const caseInputSchema = z.object({
   title: z.string().trim().min(1).max(255),
   category: z.string().trim().min(1).max(50),
   summary: z.string().trim().min(1),
+  detail: z.string().trim().min(1),
   coverPath: z.string().min(1),
   episodes: z.array(episodeInputSchema).min(1),
 });

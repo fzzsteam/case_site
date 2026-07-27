@@ -28,8 +28,10 @@ export const categories = mysqlTable("categories", {
 export const cases = mysqlTable("cases", {
   id: char("id", { length: 36 }).primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
   category: varchar("category", { length: 50 }).notNull(),
   summary: text("summary").notNull(),
+  detail: text("detail").notNull(),
   coverPath: varchar("cover_path", { length: 500 }).notNull(),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -41,6 +43,7 @@ export const caseEpisodes = mysqlTable("case_episodes", {
   caseId: char("case_id", { length: 36 }).notNull().references(() => cases.id, { onDelete: "cascade" }),
   videoPath: varchar("video_path", { length: 500 }).notNull(),
   orientation: mysqlEnum("orientation", ["landscape", "portrait"]).notNull(),
+  durationSeconds: int("duration_seconds"),
   sortOrder: int("sort_order").notNull().default(0),
 });
 

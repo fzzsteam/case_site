@@ -1,3 +1,3 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/content/site";
-export default function robots():MetadataRoute.Robots{return{rules:{userAgent:"*",allow:"/",disallow:"/api/"},sitemap:`${siteConfig.url.replace(/\/$/,"")}/sitemap.xml`};}
+export default function robots():MetadataRoute.Robots{return{rules:{userAgent:"*",allow:"/",disallow:["/api/","/admin"]},sitemap:`${siteConfig.url.replace(/\/$/,"")}/sitemap.xml`};}

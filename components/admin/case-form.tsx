@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, GripVertical, Image as ImageIcon, Trash2, Video } from "lucide-react";
 import type { Category, CaseCategory, CaseStudy, VideoOrientation } from "@/lib/cases/types";
-import { detectVideoOrientation, uploadFile } from "@/lib/admin/upload-client";
+import { readVideoMetadata, uploadFile } from "@/lib/admin/upload-client";
 import { useToast } from "./toast";
 import { FileDropTarget } from "./file-drop-target";
 import { VideoPreviewDialog } from "./video-preview-dialog";
@@ -18,7 +18,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const coverUrl = (path: string) => `/api/media/image/${path.split("/").map(encodeURIComponent).join("/")}`;
 
-type EpisodeDraft = { key: string; fileName: string; videoPath: string; orientation: VideoOrientation | null; uploading: boolean; progress: number; previewUrl?: string };
+type EpisodeDraft = { key: string; fileName: string; videoPath: string; orientation: VideoOrientation | null; durationSeconds: number | null; uploading: boolean; progress: number; previewUrl?: string };
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+}
 
 let keyCounter = 0;
 const nextKey = () => `episode-${Date.now()}-${keyCounter++}`;
@@ -32,12 +38,13 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
   const [category, setCategory] = useState<CaseCategory>(initialCase?.category ?? "");
   const [categories, setCategories] = useState<Category[]>([]);
   const [summary, setSummary] = useState(initialCase?.summary ?? "");
+  const [detail, setDetail] = useState(initialCase?.detail ?? "");
   const [coverPath, setCoverPath] = useState(initialCase?.coverPath ?? "");
   const [coverPreview, setCoverPreview] = useState(initialCase ? coverUrl(initialCase.coverPath) : "");
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverProgress, setCoverProgress] = useState(0);
   const [episodes, setEpisodes] = useState<EpisodeDraft[]>(
-    initialCase ? initialCase.episodes.map((episode) => ({ key: episode.id, fileName: episode.videoPath.split("/").pop() ?? episode.videoPath, videoPath: episode.videoPath, orientation: episode.orientation, uploading: false, progress: 100 })) : [],
+    initialCase ? initialCase.episodes.map((episode) => ({ key: episode.id, fileName: episode.videoPath.split("/").pop() ?? episode.videoPath, videoPath: episode.videoPath, orientation: episode.orientation, durationSeconds: episode.durationSeconds, uploading: false, progress: 100 })) : [],
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -73,17 +80,17 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
 
   async function handleVideoFiles(files: FileList | File[]) {
     const list = Array.from(files);
-    const drafts = list.map((file) => ({ key: nextKey(), fileName: file.name, videoPath: "", orientation: null as VideoOrientation | null, uploading: true, progress: 0, previewUrl: URL.createObjectURL(file) }));
+    const drafts = list.map((file) => ({ key: nextKey(), fileName: file.name, videoPath: "", orientation: null as VideoOrientation | null, durationSeconds: null as number | null, uploading: true, progress: 0, previewUrl: URL.createObjectURL(file) }));
     setEpisodes((current) => [...current, ...drafts]);
 
     await Promise.all(list.map(async (file, index) => {
       const draftKey = drafts[index].key;
       try {
-        const [orientation, videoPath] = await Promise.all([
-          detectVideoOrientation(file),
+        const [metadata, videoPath] = await Promise.all([
+          readVideoMetadata(file),
           uploadFile("video", file, (percent) => setEpisodes((current) => current.map((episode) => (episode.key === draftKey ? { ...episode, progress: percent } : episode)))),
         ]);
-        setEpisodes((current) => current.map((episode) => (episode.key === draftKey ? { ...episode, orientation, videoPath, uploading: false, progress: 100 } : episode)));
+        setEpisodes((current) => current.map((episode) => (episode.key === draftKey ? { ...episode, orientation: metadata.orientation, durationSeconds: metadata.durationSeconds, videoPath, uploading: false, progress: 100 } : episode)));
       } catch {
         showToast("error", `${file.name} 上传失败，请重试`);
         setEpisodes((current) => current.filter((episode) => episode.key !== draftKey));
@@ -131,6 +138,7 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
     if (!title.trim()) next.title = "请填写标题";
     if (!category) next.category = "请选择分类";
     if (!summary.trim()) next.summary = "请填写简介";
+    if (!detail.trim()) next.detail = "请填写详情正文";
     if (!coverPath) next.coverPath = "请上传封面图片";
     if (episodes.length === 0) next.episodes = "请至少上传一个视频";
     if (episodes.some((episode) => episode.uploading || !episode.videoPath)) next.episodes = "请等待视频上传完成";
@@ -149,8 +157,9 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
         title: title.trim(),
         category,
         summary: summary.trim(),
+        detail: detail.trim(),
         coverPath,
-        episodes: episodes.map((episode) => ({ videoPath: episode.videoPath, orientation: episode.orientation })),
+        episodes: episodes.map((episode) => ({ videoPath: episode.videoPath, orientation: episode.orientation, durationSeconds: episode.durationSeconds })),
       };
       const response = await fetch(isEdit ? `/api/admin/cases/${initialCase!.id}` : "/api/admin/cases", {
         method: isEdit ? "PATCH" : "POST",
@@ -212,6 +221,11 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
               <Textarea id="case-summary" value={summary} onChange={(event) => setSummary(event.target.value)} aria-invalid={Boolean(errors.summary)} />
               {errors.summary && <p className="text-xs text-destructive">{errors.summary}</p>}
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="case-detail">详情正文</Label>
+              <Textarea id="case-detail" rows={8} value={detail} onChange={(event) => setDetail(event.target.value)} aria-invalid={Boolean(errors.detail)} placeholder="案例详情页展示的完整介绍，用于 SEO 收录" />
+              {errors.detail && <p className="text-xs text-destructive">{errors.detail}</p>}
+            </div>
 
             <div className="pt-2">
               <h2 className="mb-3 text-sm font-semibold text-foreground">分集视频</h2>
@@ -234,6 +248,7 @@ export function CaseForm({ initialCase }: { initialCase?: CaseStudy }) {
                       ) : (
                         <>
                           <Badge variant="secondary">{episode.orientation === "landscape" ? "横屏" : "竖屏"}</Badge>
+                          {episode.durationSeconds !== null && <Badge variant="secondary">{formatDuration(episode.durationSeconds)}</Badge>}
                           <Button
                             type="button"
                             variant="ghost"

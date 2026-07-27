@@ -4,8 +4,8 @@ import { ToastProvider } from "@/components/admin/toast";
 import type { CaseStudy, Category } from "@/lib/cases/types";
 
 const sampleCases: CaseStudy[] = [
-  { id: "case-1", title: "案例一", category: "宣传片", summary: "简介一", coverPath: "case-site/cases/uploads/cover1.png", episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/video1.mp4", orientation: "landscape" }] },
-  { id: "case-2", title: "案例二", category: "短剧", summary: "简介二", coverPath: "case-site/cases/uploads/cover2.png", episodes: [{ id: "ep-2a", videoPath: "case-site/cases/uploads/video2a.mp4", orientation: "portrait" }, { id: "ep-2b", videoPath: "case-site/cases/uploads/video2b.mp4", orientation: "landscape" }] },
+  { id: "case-1", slug: "an-li-yi", title: "案例一", category: "宣传片", summary: "简介一", detail: "详情一", coverPath: "case-site/cases/uploads/cover1.png", createdAt: new Date("2026-01-01"), episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/video1.mp4", orientation: "landscape", durationSeconds: null }] },
+  { id: "case-2", slug: "an-li-er", title: "案例二", category: "短剧", summary: "简介二", detail: "详情二", coverPath: "case-site/cases/uploads/cover2.png", createdAt: new Date("2026-01-01"), episodes: [{ id: "ep-2a", videoPath: "case-site/cases/uploads/video2a.mp4", orientation: "portrait", durationSeconds: null }, { id: "ep-2b", videoPath: "case-site/cases/uploads/video2b.mp4", orientation: "landscape", durationSeconds: null }] },
 ];
 
 const sampleCategories: Category[] = [

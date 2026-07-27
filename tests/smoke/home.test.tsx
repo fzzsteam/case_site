@@ -1,13 +1,17 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 import HomePage from "@/app/(site)/page";
+import { slugify } from "@/lib/cases/slug";
 
 vi.mock("@/lib/cases/queries", async () => {
   const { seedCases } = await import("@/lib/cases/seed-data");
+  const { slugify } = await import("@/lib/cases/slug");
   const mockCases = seedCases.map((item, index) => ({
     ...item,
     id: `case-${index}`,
-    episodes: item.episodes.map((episode, episodeIndex) => ({ ...episode, id: `case-${index}-episode-${episodeIndex}` })),
+    slug: slugify(item.title),
+    createdAt: new Date("2026-01-01"),
+    episodes: item.episodes.map((episode, episodeIndex) => ({ ...episode, id: `case-${index}-episode-${episodeIndex}`, durationSeconds: null })),
   }));
   return { listCases: () => Promise.resolve(mockCases) };
 });
@@ -50,7 +54,7 @@ it("uses two split mist layers for the opening reveal", async () => {
   expect(container.querySelectorAll(".hero-mist-half")).toHaveLength(4);
 });
 
-it("renders the about section with company information and services under the cases chapter", async () => {
+it("renders the about section with company information and services under the about chapter", async () => {
   const { container } = render(await HomePage());
   expect(screen.getByRole("heading", { level: 2, name: "关于我们" })).toBeInTheDocument();
   expect(screen.getByText(/深圳市方直智胜科技有限公司系A股上市公司方直科技/)).toBeInTheDocument();
@@ -58,41 +62,20 @@ it("renders the about section with company information and services under the ca
   expect(screen.getAllByText("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901").length).toBeGreaterThan(0);
   expect(screen.queryByText("粤ICP备2026044251号")).not.toBeInTheDocument();
   expect(screen.getByText("城市文旅 AI 宣传片")).toBeInTheDocument();
-  expect(container.querySelector(".cases-chapter .compact-services")).toBeInTheDocument();
-  expect(container.querySelector(".about-chapter .compact-services")).not.toBeInTheDocument();
+  expect(container.querySelector(".about-chapter .about-services")).toBeInTheDocument();
+  expect(container.querySelector(".cases-chapter .about-services")).not.toBeInTheDocument();
+  expect(container.querySelector(".closing-cta-layout")?.firstElementChild).toHaveClass("about-services");
+  expect(container.querySelector(".closing-cta-layout")?.lastElementChild).toHaveClass("closing-cta-content");
+  expect(container.querySelector(".closing-cta-content .cta-rule")).not.toBeInTheDocument();
+  expect(screen.queryByText("CONTACT")).not.toBeInTheDocument();
   expect(screen.queryByText("从理解开始，到传播发生")).not.toBeInTheDocument();
   expect(screen.queryByText("需求沟通")).not.toBeInTheDocument();
   expect(container.querySelector(".about-landscape")).not.toBeInTheDocument();
 });
 
-it("renders every quote plan expanded without click-to-expand controls", async () => {
-  const { container } = render(await HomePage());
-  expect(container.querySelectorAll(".quote-plan-detail")).toHaveLength(3);
-  expect(container.querySelectorAll(".quote-plans article > button")).toHaveLength(0);
-  expect(screen.queryByText("lanyanfeng@fzzsedu.cn")).not.toBeInTheDocument();
-  expect(screen.getAllByText("0755-86336966").length).toBeGreaterThan(0);
-  expect(screen.getByAltText("万象元生微信咨询二维码")).toHaveAttribute("src", "/qrcode.png");
-  expect(container.querySelector(".quote-contact")).not.toHaveTextContent("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901");
-  expect(container.querySelector(".quote-contact")).not.toHaveTextContent("互联网信息服务；人工智能技术研发；影视内容制作；软件开发");
-});
-
-it("keeps video navigation inside the opened case", async () => {
-  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ url: "/video.mp4" }) })));
+it("links case covers straight to their detail pages instead of playing inline", async () => {
   render(await HomePage());
-
-  fireEvent.click(screen.getByRole("button", { name: "苏东坡与六榕寺封面" }));
-  expect(screen.queryByRole("button", { name: "上一个视频" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "下一个视频" })).not.toBeInTheDocument();
-  expect(screen.getByText("01 / 01")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "关闭案例" }));
-  fireEvent.click(screen.getByRole("button", { name: "疯狂的荔枝封面" }));
-  expect(screen.queryByRole("button", { name: "上一个视频" })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "下一个视频" }));
-
-  await waitFor(() => expect(screen.getByText("02 / 04")).toBeInTheDocument());
-  expect(screen.getByRole("button", { name: "上一个视频" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "下一个视频" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "上一个视频" }).querySelector("svg")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "下一个视频" }).querySelector("svg")).toBeInTheDocument();
+  const cover = screen.getByRole("link", { name: "苏东坡与六榕寺封面" });
+  expect(cover).toHaveAttribute("href", `/cases/${slugify("苏东坡与六榕寺")}`);
+  expect(screen.getByRole("link", { name: "查看全部案例" })).toHaveAttribute("href", "/cases");
 });

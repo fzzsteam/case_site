@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "../globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { QuotePanel } from "@/components/home/quote-panel";
 import { siteConfig } from "@/content/site";
 import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
 
@@ -12,5 +13,5 @@ export const metadata: Metadata = { metadataBase: new URL(siteConfig.url), title
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const organization={"@context":"https://schema.org","@type":"Organization",name:siteConfig.companyName,url:siteConfig.url,email:siteConfig.email,telephone:siteConfig.phone,address:siteConfig.address,logo:`${siteConfig.url}/brand/logo.png`};
-  return <html lang="zh-CN" className={`${sans.variable} ${serif.variable}`}><body><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(organization)}}/><SiteHeader /><main>{children}</main><SiteFooter /></body></html>;
+  return <html lang="zh-CN" className={`${sans.variable} ${serif.variable}`}><body><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(organization)}}/><SiteHeader /><main>{children}</main><SiteFooter /><QuotePanel /></body></html>;
 }

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CaseForm } from "@/components/admin/case-form";
 import { ToastProvider } from "@/components/admin/toast";
-import { uploadFile, detectVideoOrientation } from "@/lib/admin/upload-client";
+import { uploadFile, readVideoMetadata } from "@/lib/admin/upload-client";
 import type { CaseStudy, Category } from "@/lib/cases/types";
 
 const push = vi.fn();
@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 
 vi.mock("@/lib/admin/upload-client", () => ({
   uploadFile: vi.fn(),
-  detectVideoOrientation: vi.fn(),
+  readVideoMetadata: vi.fn(),
 }));
 
 const sampleCategories: Category[] = [
@@ -38,7 +38,7 @@ beforeEach(() => {
   push.mockClear();
   refresh.mockClear();
   vi.mocked(uploadFile).mockReset();
-  vi.mocked(detectVideoOrientation).mockReset();
+  vi.mocked(readVideoMetadata).mockReset();
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -48,19 +48,21 @@ it("blocks submit and shows errors when required fields are missing", async () =
   fireEvent.click(screen.getByRole("button", { name: "保存" }));
   expect(await screen.findByText("请填写标题")).toBeInTheDocument();
   expect(screen.getByText("请填写简介")).toBeInTheDocument();
+  expect(screen.getByText("请填写详情正文")).toBeInTheDocument();
   expect(screen.getByText("请上传封面图片")).toBeInTheDocument();
   expect(screen.getByText("请至少上传一个视频")).toBeInTheDocument();
 });
 
 it("uploads a cover and a video then submits a new case", async () => {
   vi.mocked(uploadFile).mockImplementation(async (kind) => (kind === "cover" ? "case-site/cases/uploads/cover.png" : "case-site/cases/uploads/video.mp4"));
-  vi.mocked(detectVideoOrientation).mockResolvedValue("landscape");
+  vi.mocked(readVideoMetadata).mockResolvedValue({ orientation: "landscape", durationSeconds: 92 });
   stubFetch({ "/api/admin/cases": () => ({ id: "new-id" }) });
 
   renderForm();
   await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("宣传片"));
   fireEvent.change(screen.getByLabelText("标题"), { target: { value: "新案例" } });
   fireEvent.change(screen.getByLabelText("简介"), { target: { value: "这是简介" } });
+  fireEvent.change(screen.getByLabelText("详情正文"), { target: { value: "这是详情正文" } });
 
   const [videoInput, coverInput] = document.querySelectorAll('input[type="file"]');
   fireEvent.change(coverInput, { target: { files: [imageFile("cover.png")] } });
@@ -78,8 +80,9 @@ it("uploads a cover and a video then submits a new case", async () => {
     title: "新案例",
     category: "宣传片",
     summary: "这是简介",
+    detail: "这是详情正文",
     coverPath: "case-site/cases/uploads/cover.png",
-    episodes: [{ videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape" }],
+    episodes: [{ videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape", durationSeconds: 92 }],
   });
   expect(push).toHaveBeenCalledWith("/admin/cases");
 });
@@ -87,17 +90,21 @@ it("uploads a cover and a video then submits a new case", async () => {
 it("prefills fields in edit mode and PATCHes the existing case id", async () => {
   const existing: CaseStudy = {
     id: "case-1",
+    slug: "jiu-an-li",
     title: "旧案例",
     category: "短剧",
     summary: "旧简介",
+    detail: "旧详情正文",
     coverPath: "case-site/cases/uploads/old-cover.png",
-    episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait" }],
+    createdAt: new Date("2026-01-01"),
+    episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait", durationSeconds: 45 }],
   };
   stubFetch({ "/api/admin/cases/case-1": () => ({ ok: true }) });
 
   renderForm(existing);
   expect(screen.getByLabelText("标题")).toHaveValue("旧案例");
   expect(screen.getByLabelText("简介")).toHaveValue("旧简介");
+  expect(screen.getByLabelText("详情正文")).toHaveValue("旧详情正文");
   expect(screen.getByText("old-video.mp4")).toBeInTheDocument();
   expect(screen.getByText("竖屏")).toBeInTheDocument();
 
@@ -108,11 +115,14 @@ it("prefills fields in edit mode and PATCHes the existing case id", async () => 
 it("removes an episode from the list", async () => {
   const existing: CaseStudy = {
     id: "case-1",
+    slug: "jiu-an-li",
     title: "旧案例",
     category: "短剧",
     summary: "旧简介",
+    detail: "旧详情正文",
     coverPath: "case-site/cases/uploads/old-cover.png",
-    episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait" }],
+    createdAt: new Date("2026-01-01"),
+    episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait", durationSeconds: 45 }],
   };
   renderForm(existing);
   expect(screen.getByText("old-video.mp4")).toBeInTheDocument();

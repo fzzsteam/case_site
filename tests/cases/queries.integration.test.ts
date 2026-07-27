@@ -8,17 +8,19 @@ describe.skipIf(!hasMysql)("case queries against a real MySQL database", () => {
       title: "集成测试案例一",
       category: "宣传片",
       summary: "第一个测试案例",
+      detail: "第一个测试案例的详情正文",
       coverPath: "case-site/cases/uploads/test-cover-1.png",
-      episodes: [{ videoPath: "case-site/cases/uploads/test-video-1.mp4", orientation: "landscape" }],
+      episodes: [{ videoPath: "case-site/cases/uploads/test-video-1.mp4", orientation: "landscape", durationSeconds: 92 }],
     });
     const id2 = await createCase({
       title: "集成测试案例二",
       category: "短剧",
       summary: "第二个测试案例",
+      detail: "第二个测试案例的详情正文",
       coverPath: "case-site/cases/uploads/test-cover-2.png",
       episodes: [
-        { videoPath: "case-site/cases/uploads/test-video-2a.mp4", orientation: "portrait" },
-        { videoPath: "case-site/cases/uploads/test-video-2b.mp4", orientation: "landscape" },
+        { videoPath: "case-site/cases/uploads/test-video-2a.mp4", orientation: "portrait", durationSeconds: null },
+        { videoPath: "case-site/cases/uploads/test-video-2b.mp4", orientation: "landscape", durationSeconds: null },
       ],
     });
 
@@ -33,8 +35,9 @@ describe.skipIf(!hasMysql)("case queries against a real MySQL database", () => {
         title: "集成测试案例一（已更新）",
         category: "广告片",
         summary: "更新后的简介",
+        detail: "更新后的详情正文",
         coverPath: "case-site/cases/uploads/test-cover-1.png",
-        episodes: [{ videoPath: "case-site/cases/uploads/test-video-1-new.mp4", orientation: "portrait" }],
+        episodes: [{ videoPath: "case-site/cases/uploads/test-video-1-new.mp4", orientation: "portrait", durationSeconds: null }],
       });
       const updated = await getCaseById(id1);
       expect(updated?.title).toBe("集成测试案例一（已更新）");

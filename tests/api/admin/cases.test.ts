@@ -20,14 +20,17 @@ vi.mock("@/lib/cases/categories-queries", () => ({
 
 const sampleCase: CaseStudy = {
   id: "case-1",
+  slug: "shi-li-an-li",
   title: "示例案例",
   category: "宣传片",
   summary: "简介",
+  detail: "详情正文",
   coverPath: "case-site/cases/uploads/cover.png",
-  episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape" }],
+  createdAt: new Date("2026-01-01"),
+  episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape", durationSeconds: null }],
 };
 
-const validInput = { title: "示例案例", category: "宣传片", summary: "简介", coverPath: "case-site/cases/uploads/cover.png", episodes: [{ videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape" }] };
+const validInput = { title: "示例案例", category: "宣传片", summary: "简介", detail: "详情正文", coverPath: "case-site/cases/uploads/cover.png", episodes: [{ videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape" }] };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -37,7 +40,7 @@ beforeEach(() => {
 it("lists cases", async () => {
   vi.mocked(listCases).mockResolvedValue([sampleCase]);
   const response = await GET();
-  expect(await response.json()).toEqual({ cases: [sampleCase] });
+  expect(await response.json()).toEqual({ cases: [{ ...sampleCase, createdAt: sampleCase.createdAt.toISOString() }] });
 });
 
 it("creates a case with valid input", async () => {

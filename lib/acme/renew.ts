@@ -131,6 +131,10 @@ export async function syncCertificate(): Promise<void> {
 let timer: ReturnType<typeof setInterval> | undefined;
 
 export function startAcmeRenewalLoop(): void {
+  if (process.env.NODE_ENV !== "production") {
+    log("非生产环境（本地开发），跳过证书自动续签，线上部署会自动启用");
+    return;
+  }
   const config = getAcmeConfig();
   if (!config.enabled) {
     log("未配置证书自动续签所需的环境变量，跳过");

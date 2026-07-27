@@ -16,14 +16,19 @@ export async function uploadFile(kind: "cover" | "video", file: File, onProgress
   return objectPath;
 }
 
-export function detectVideoOrientation(file: File): Promise<"landscape" | "portrait"> {
+export type VideoMetadata = { orientation: "landscape" | "portrait"; durationSeconds: number };
+
+export function readVideoMetadata(file: File): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     video.preload = "metadata";
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(url);
-      resolve(video.videoWidth >= video.videoHeight ? "landscape" : "portrait");
+      resolve({
+        orientation: video.videoWidth >= video.videoHeight ? "landscape" : "portrait",
+        durationSeconds: Math.round(video.duration),
+      });
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
