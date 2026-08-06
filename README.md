@@ -37,7 +37,7 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 登录后可在 `/admin/cases` 增删改案例、拖拽调整展示顺序，`/admin/categories` 管理分类（删除前需先清空该分类下的案例）；新建/编辑表单里封面和视频直传 OSS，视频的横竖屏由浏览器自动识别，上传完成后可直接点击预览播放。删除案例只会删数据库记录，不会删除 OSS 上的原始素材文件。
 
-数据库结构定义在 `lib/db/schema.ts`，迁移文件在 `lib/db/migrations/`，可以用 `npm run db:generate` 基于 schema 重新生成迁移。
+数据库结构定义在 `lib/db/schema.ts`，迁移文件在 `lib/db/migrations/`，可以用 `npm run db:generate` 基于 schema 重新生成迁移。生成后需人工检查 TIMESTAMP 列的写法，原因见 `CLAUDE.md`。
 
 ## HTTPS 证书自动续签（可选）
 
