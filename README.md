@@ -49,6 +49,53 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 需要的权限：`AliyunDNSFullAccess`（DNS-01 校验）、`AliyunYundunCertFullAccess`（数字证书管理服务，证书上传/删除）、`AliyunSAEFullAccess`（更新网关路由绑定的证书）。
 
+## MCP 公众号发布服务
+
+`/api/mcp` 是一个远程 MCP 服务，让本地 agent（如 Claude Code）通过它把文章发到微信公众号。
+
+**它解决的问题**：微信在获取 `access_token` 时会校验调用方的**公网出口 IP** 是否在公众号的 IP 白名单里。本地开发机的 IP 会漂，没法登记；而本应用部署在 SAE 上，出公网走 NAT 网关绑定的 EIP，出口 IP 固定，因此适合做这一层中转。拿到 token 之后的接口（草稿箱、素材、发布）都不再校验 IP，所以整个痛点只集中在这一个调用上。
+
+### 配置
+
+1. 环境变量 `WECHAT_APP_ID` / `WECHAT_APP_SECRET`（公众平台「设置与开发 → 基本配置」）
+2. 部署后带 Token 请求 `GET /api/health/egress-ip`，连打几次确认返回的 IP 恒定
+3. 把该 IP 填进公众号后台的「IP 白名单」
+4. 在 `/admin/tokens` 新建一个 Token，复制接入命令到本地终端执行：
+   ```bash
+   claude mcp add --transport http wechat https://video.fzzsai.com/api/mcp \
+     --header "Authorization: Bearer <token>"
+   ```
+
+> **运维注意**：出口 IP 来自 NAT 网关绑定的弹性公网 IP（`39.108.129.23` / `eip-wz9sy75co08v511bb91q6`）。这个 IP 已登记在公众号 IP 白名单里，**释放或更换该 EIP 必须同步修改公众号后台**，否则发布会报 `40164`，而该错误码看不出跟 EIP 有任何关系，极难排查。
+
+### 提供的工具
+
+| 工具 | 说明 |
+| --- | --- |
+| `wechat_create_upload_url` | 换取 10 分钟有效的图片上传地址 |
+| `wechat_create_draft` | 新建图文草稿（正文 HTML，封面必填） |
+| `wechat_update_draft` | 覆盖更新已有草稿 |
+| `wechat_list_drafts` | 列出草稿，找回 media_id |
+| `wechat_publish_draft` | 发布草稿（公开可访问，**不推送给粉丝**） |
+| `wechat_get_publish_status` | 查询异步发布结果 |
+
+**不提供群发接口**。发布只让文章公开可访问并进入公众号发表记录，粉丝不会收到推送；真正推送粉丝的群发是不可逆操作，不适合交给 agent 自动触发，需要时请到公众平台后台手动操作。
+
+### 图片为什么要走 curl
+
+MCP 工具的参数由模型逐 token 生成，图片数据不可能写进参数。所以本地图片走旁路：`wechat_create_upload_url` 返回一个带 HMAC 签名的上传地址，agent 用 Bash 执行 `curl -F "file=@图片路径" '<upload_url>'` 上传，文件经 HTTP body 传输，完全不经过模型 context。服务端收到后立刻转投微信并返回自描述的 ref，**不保存任何临时状态**，因此多副本部署下不存在「上传打到 A 实例、建草稿打到 B 实例」的问题。
+
+正文里的 `<img src>` 如果不是微信域名，服务端会自动抓取、转投微信并回填地址——微信对外链图片是**静默丢弃**的，不做这步会出现「草稿建成功但图片全是空白」。除此之外正文 HTML 不做任何改动。
+
+### 上线检查清单
+
+1. `GET /api/health/egress-ip` 连打 5 次，IP 恒定 → 填入公众号 IP 白名单
+2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 6 个工具
+3. `wechat_create_upload_url` → curl 传一张图 → 拿到 ref
+4. `wechat_create_draft` 建一篇带封面和正文图的草稿 → **去公众平台后台肉眼确认排版和图片都在**
+5. `wechat_publish_draft` → `wechat_get_publish_status` 轮询到成功 → 打开文章链接确认
+6. 用一个错误的 Token 调一次，确认返回 401
+
 ## 验证
 
 ```bash

@@ -9,6 +9,16 @@ export const adminCredentials = mysqlTable("admin_credentials", {
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
+// MCP 服务的访问凭证。token 按产品决策以明文存储，后台可随时查看复制；
+// 因此这张表的读取权限等价于公众号发布权限，不要在日志或接口响应里外泄。
+export const mcpTokens = mysqlTable("mcp_tokens", {
+  id: char("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  token: varchar("token", { length: 100 }).notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+});
+
 export const acmeCertificates = mysqlTable("acme_certificates", {
   domain: varchar("domain", { length: 255 }).primaryKey(),
   fullchain: text("fullchain").notNull(),
