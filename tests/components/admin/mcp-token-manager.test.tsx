@@ -49,17 +49,69 @@ it("从未使用过的 token 显示「从未使用」", async () => {
   expect(await screen.findByText("最后使用 从未使用")).toBeInTheDocument();
 });
 
-it("复制接入命令带上完整的 transport、地址和鉴权头", async () => {
-  renderManager();
-  await screen.findByText("我的笔记本");
+describe("接入指南弹窗", () => {
+  async function openGuide() {
+    renderManager();
+    await screen.findByText("我的笔记本");
+    fireEvent.click(screen.getByRole("button", { name: "查看我的笔记本的接入指南" }));
+  }
 
-  fireEvent.click(screen.getByRole("button", { name: "复制接入命令" }));
+  it("默认展示 Claude Code 的接入命令，地址和凭证已填好", async () => {
+    await openGuide();
 
-  await waitFor(() => expect(writeText).toHaveBeenCalled());
-  const command = writeText.mock.calls[0][0] as unknown as string;
-  expect(command).toContain("claude mcp add --transport http wechat");
-  expect(command).toContain("/api/mcp");
-  expect(command).toContain(`Authorization: Bearer ${FULL_TOKEN}`);
+    const code = await screen.findByText(/claude mcp add --transport http wechat/, { selector: "pre" });
+    expect(code.textContent).toContain("/api/mcp");
+    expect(code.textContent).toContain(`Authorization: Bearer ${FULL_TOKEN}`);
+  });
+
+  it("覆盖国内外主流客户端的配置形态", async () => {
+    await openGuide();
+
+    for (const label of ["Claude Code", "通用 JSON", "VS Code", "仅支持 stdio", "图形界面手填"]) {
+      expect(screen.getByRole("tab", { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it("通用 JSON 用 mcpServers，VS Code 用 servers（写错了不会报错只是连不上）", async () => {
+    await openGuide();
+
+    fireEvent.click(screen.getByRole("tab", { name: "通用 JSON" }));
+    expect(screen.getByText(/"mcpServers"/, { selector: "pre" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "VS Code" }));
+    const vscode = screen.getByText(/"servers"/, { selector: "pre" });
+    expect(vscode.textContent).not.toContain("mcpServers");
+  });
+
+  it("只支持 stdio 的客户端给出 mcp-remote 桥接方案", async () => {
+    await openGuide();
+
+    fireEvent.click(screen.getByRole("tab", { name: "仅支持 stdio" }));
+
+    const code = screen.getByText(/mcp-remote/, { selector: "pre" });
+    expect(code.textContent).toContain('"npx"');
+    expect(code.textContent).toContain(`Authorization: Bearer ${FULL_TOKEN}`);
+  });
+
+  it("图形界面手填栏给出可逐项抄写的原始参数", async () => {
+    await openGuide();
+
+    fireEvent.click(screen.getByRole("tab", { name: "图形界面手填" }));
+
+    const code = screen.getByText(/传输类型/, { selector: "pre" });
+    expect(code.textContent).toContain("Streamable HTTP");
+    expect(code.textContent).toContain("请求头名称：Authorization");
+    expect(code.textContent).toContain(FULL_TOKEN);
+  });
+
+  it("代码块可一键复制", async () => {
+    await openGuide();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "复制代码" })[0]);
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText.mock.calls[0][0] as unknown as string).toContain("claude mcp add");
+  });
 });
 
 it("新建的 token 立即展开，方便当场复制", async () => {

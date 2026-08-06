@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check, Copy, Eye, EyeOff, KeyRound, Plus, Terminal, Trash2 } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Plug, Plus, Trash2 } from "lucide-react";
 import { useToast } from "./toast";
 import { ConfirmDialog } from "./confirm-dialog";
+import { McpConnectDialog } from "./mcp-connect-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -28,6 +29,7 @@ export function McpTokenManager() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<McpTokenView | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [connectTarget, setConnectTarget] = useState<McpTokenView | null>(null);
   const [siteUrl, setSiteUrl] = useState(process.env.NEXT_PUBLIC_SITE_URL ?? "");
 
   useEffect(() => {
@@ -40,10 +42,6 @@ export function McpTokenManager() {
       .then((data) => setTokens(data.tokens))
       .catch(() => showToast("error", "加载 Token 列表失败"));
   }, [showToast]);
-
-  function buildConnectCommand(token: string): string {
-    return `claude mcp add --transport http wechat ${siteUrl}/api/mcp --header "Authorization: Bearer ${token}"`;
-  }
 
   async function copy(text: string, id: string, label: string) {
     try {
@@ -111,7 +109,7 @@ export function McpTokenManager() {
       <Card className="mb-5 bg-accent/40 p-4">
         <p className="text-sm font-medium text-foreground">怎么接入</p>
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          新建一个 Token，点右侧的 <Terminal size={13} className="inline align-[-2px]" /> 复制完整接入命令，粘贴到本地终端执行即可。之后在 Claude Code 里用 <code className="rounded bg-secondary px-1 py-0.5 text-xs">/mcp</code> 确认连接成功。
+          新建一个 Token，点右侧的 <Plug size={13} className="inline align-[-2px]" /> 打开接入指南，里面按客户端分好了类（Claude Code、Cursor、Cherry Studio、VS Code、图形界面手填等），地址和凭证都已填好，复制粘贴即可。
         </p>
       </Card>
 
@@ -164,8 +162,8 @@ export function McpTokenManager() {
                 <Button variant="ghost" size="icon-sm" aria-label="复制 Token" onClick={() => copy(item.token, `${item.id}-token`, "Token")}>
                   {copiedId === `${item.id}-token` ? <Check size={15} /> : <Copy size={15} />}
                 </Button>
-                <Button variant="ghost" size="icon-sm" aria-label="复制接入命令" onClick={() => copy(buildConnectCommand(item.token), `${item.id}-cmd`, "接入命令")}>
-                  {copiedId === `${item.id}-cmd` ? <Check size={15} /> : <Terminal size={15} />}
+                <Button variant="ghost" size="icon-sm" aria-label={`查看${item.name}的接入指南`} onClick={() => setConnectTarget(item)}>
+                  <Plug size={15} />
                 </Button>
                 <Button variant="ghost" size="icon-sm" aria-label={`吊销${item.name}`} onClick={() => setPendingDelete(item)}>
                   <Trash2 size={15} />
@@ -175,6 +173,14 @@ export function McpTokenManager() {
           ))}
         </Card>
       )}
+
+      <McpConnectDialog
+        open={connectTarget !== null}
+        endpoint={`${siteUrl}/api/mcp`}
+        token={connectTarget?.token ?? ""}
+        tokenName={connectTarget?.name ?? ""}
+        onClose={() => setConnectTarget(null)}
+      />
 
       <ConfirmDialog
         open={pendingDelete !== null}
