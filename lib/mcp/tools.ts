@@ -1,12 +1,15 @@
 import "server-only";
 import { z } from "zod";
 import { createDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft, type DraftArticle } from "@/lib/wechat/draft";
-import { deleteMass, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
+import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
 import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
-import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
-import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
+import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
+import { closeComments, deleteComment, deleteCommentReply, listComments, markComment, openComments, replyComment, unmarkComment } from "@/lib/wechat/comment";
 import { listTags } from "@/lib/wechat/tag";
-import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, yesterdayIso } from "@/lib/wechat/stats";
+import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, getUserCumulate, getUserSummary, yesterdayIso } from "@/lib/wechat/stats";
+import { batchGetUserInfo, createTag, deleteTag, getUserInfo, getUserTags, listFollowers, listTagMembers, tagUsers, untagUsers, updateTag } from "@/lib/wechat/user";
+import { createMenu, deleteMenu, getMenu } from "@/lib/wechat/menu";
+import { listKfAccounts, sendCustomerMessage, sendTyping } from "@/lib/wechat/customer";
 import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
@@ -56,6 +59,18 @@ const statsDateSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/,
 const statsRangeSchema = z.object({
   begin_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式应为 YYYY-MM-DD").optional(),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式应为 YYYY-MM-DD").optional(),
+});
+
+const commentOpenCloseSchema = z.object({
+  msg_data_id: z.number(),
+  index: z.number().int().min(0).optional(),
+});
+
+const customerMessageSchema = z.object({
+  openid: z.string().trim().min(1),
+  msgtype: z.string().trim().min(1),
+  content: z.record(z.string(), z.unknown()),
+  customservice: z.string().trim().min(1).optional(),
 });
 
 /** 封面既接受上传得到的 wxmedia: 句柄，也接受公网图片地址（由服务端代抓再转投微信）。 */
@@ -611,6 +626,331 @@ export const TOOLS: ToolDefinition[] = [
       const beginDate = input.begin_date ?? daysAgoIso(7);
       return getArticleStatsSummary(beginDate, endDate);
     },
+  },
+  {
+    name: "wechat_list_followers",
+    description: "获取公众号的关注者 openid 列表（分页）。返回 next_openid 时用同样的参数继续拉下一页，直到 next_openid 为空。",
+    inputSchema: {
+      type: "object",
+      properties: { next_openid: { type: "string", description: "上一页返回的游标，第一页不传。" } },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { next_openid } = z.object({ next_openid: z.string().trim().min(1).optional() }).parse(args ?? {});
+      return listFollowers(next_openid);
+    },
+  },
+  {
+    name: "wechat_get_user_info",
+    description: "获取单个粉丝的基本信息：是否关注、关注时间、关注来源渠道、标签。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        openid: { type: "string", description: "粉丝的 openid。" },
+        lang: { type: "string", enum: ["zh_CN", "zh_TW", "en"], description: "返回语言，默认 zh_CN。" },
+      },
+      required: ["openid"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = z.object({ openid: z.string().trim().min(1), lang: z.enum(["zh_CN", "zh_TW", "en"]).optional() }).parse(args);
+      return getUserInfo(input.openid, input.lang ?? "zh_CN");
+    },
+  },
+  {
+    name: "wechat_batch_get_user_info",
+    description: "批量获取粉丝基本信息，一次最多 100 个。",
+    inputSchema: {
+      type: "object",
+      properties: { openids: { type: "array", items: { type: "string" }, description: "粉丝 openid 列表，最多 100 个。" } },
+      required: ["openids"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { openids } = z.object({ openids: z.array(z.string().trim().min(1)).min(1).max(100) }).parse(args);
+      return batchGetUserInfo(openids);
+    },
+  },
+  {
+    name: "wechat_create_tag",
+    description: "创建粉丝标签（最多 100 个），创建后可用于按标签群发。",
+    inputSchema: {
+      type: "object",
+      properties: { name: { type: "string", description: "标签名，最多 30 个字符。" } },
+      required: ["name"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { name } = z.object({ name: z.string().trim().min(1).max(30) }).parse(args);
+      return createTag(name);
+    },
+  },
+  {
+    name: "wechat_update_tag",
+    description: "修改粉丝标签名称。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "number", description: "标签 id，从 wechat_list_tags 获取。" },
+        name: { type: "string", description: "新标签名，最多 30 个字符。" },
+      },
+      required: ["id", "name"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = z.object({ id: z.number().int(), name: z.string().trim().min(1).max(30) }).parse(args);
+      return updateTag(input.id, input.name);
+    },
+  },
+  {
+    name: "wechat_delete_tag",
+    description: "删除粉丝标签，标签下的粉丝不会被删除，只是去掉该标签。",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "number", description: "标签 id。" } },
+      required: ["id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { id } = z.object({ id: z.number().int() }).parse(args);
+      return deleteTag(id);
+    },
+  },
+  {
+    name: "wechat_tag_users",
+    description: "给一批粉丝打标签。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tag_id: { type: "number", description: "标签 id。" },
+        openids: { type: "array", items: { type: "string" }, description: "要打标签的粉丝 openid 列表。" },
+      },
+      required: ["tag_id", "openids"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = z.object({ tag_id: z.number().int(), openids: z.array(z.string().trim().min(1)).min(1) }).parse(args);
+      return tagUsers(input.tag_id, input.openids);
+    },
+  },
+  {
+    name: "wechat_untag_users",
+    description: "给一批粉丝取消标签。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tag_id: { type: "number", description: "标签 id。" },
+        openids: { type: "array", items: { type: "string" }, description: "要取消标签的粉丝 openid 列表。" },
+      },
+      required: ["tag_id", "openids"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = z.object({ tag_id: z.number().int(), openids: z.array(z.string().trim().min(1)).min(1) }).parse(args);
+      return untagUsers(input.tag_id, input.openids);
+    },
+  },
+  {
+    name: "wechat_list_tag_members",
+    description: "获取某标签下的粉丝 openid 列表（分页，用 next_openid 翻页）。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tag_id: { type: "number", description: "标签 id。" },
+        next_openid: { type: "string", description: "上一页返回的游标，第一页不传。" },
+      },
+      required: ["tag_id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = z.object({ tag_id: z.number().int(), next_openid: z.string().trim().min(1).optional() }).parse(args);
+      return listTagMembers(input.tag_id, input.next_openid);
+    },
+  },
+  {
+    name: "wechat_get_user_tags",
+    description: "获取某个粉丝被打上的标签 id 列表。",
+    inputSchema: {
+      type: "object",
+      properties: { openid: { type: "string", description: "粉丝 openid。" } },
+      required: ["openid"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { openid } = z.object({ openid: z.string().trim().min(1) }).parse(args);
+      return getUserTags(openid);
+    },
+  },
+  {
+    name: "wechat_get_followers_stats",
+    description: "查某天的粉丝增减数据（新增/取消关注，按来源渠道区分）。数据从 2014-12-01 起有效，只能查 1 天，最大到昨天，建议每天 8 点后查询。",
+    inputSchema: {
+      type: "object",
+      properties: { date: { type: "string", description: "要查询的日期 YYYY-MM-DD，默认昨天。" } },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { date } = statsDateSchema.parse(args ?? {});
+      return getUserSummary(date ?? yesterdayIso());
+    },
+  },
+  {
+    name: "wechat_get_total_followers",
+    description: "查某天的累计关注用户数。数据从 2014-12-01 起有效，只能查 1 天，最大到昨天。",
+    inputSchema: {
+      type: "object",
+      properties: { date: { type: "string", description: "要查询的日期 YYYY-MM-DD，默认昨天。" } },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { date } = statsDateSchema.parse(args ?? {});
+      return getUserCumulate(date ?? yesterdayIso());
+    },
+  },
+  {
+    name: "wechat_open_comments",
+    description: "打开已发布文章的留言功能（公众号需具备留言功能权限）。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        msg_data_id: { type: "number", description: "群发或发布返回的 msg_data_id。" },
+        index: { type: "number", description: "多图文时指定第几篇，从 0 开始，默认 0。" },
+      },
+      required: ["msg_data_id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = commentOpenCloseSchema.parse(args);
+      return openComments({ msgDataId: input.msg_data_id, index: input.index });
+    },
+  },
+  {
+    name: "wechat_close_comments",
+    description: "关闭已发布文章的留言功能。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        msg_data_id: { type: "number", description: "群发或发布返回的 msg_data_id。" },
+        index: { type: "number", description: "多图文时指定第几篇，从 0 开始，默认 0。" },
+      },
+      required: ["msg_data_id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = commentOpenCloseSchema.parse(args);
+      return closeComments({ msgDataId: input.msg_data_id, index: input.index });
+    },
+  },
+  {
+    name: "wechat_delete_comment_reply",
+    description: "删除某条留言下的回复。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        msg_data_id: { type: "number", description: "群发或发布返回的 msg_data_id。" },
+        index: { type: "number", description: "多图文时指定第几篇，从 0 开始，默认 0。" },
+        user_comment_id: { type: "number", description: "wechat_list_comments 返回的 user_comment_id。" },
+      },
+      required: ["msg_data_id", "user_comment_id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = commentTargetSchema.parse(args);
+      return deleteCommentReply({ msgDataId: input.msg_data_id, index: input.index, userCommentId: input.user_comment_id });
+    },
+  },
+  {
+    name: "wechat_get_material",
+    description: "根据 media_id 获取永久素材详情（图片返回 URL，视频返回视频信息）。",
+    inputSchema: {
+      type: "object",
+      properties: { media_id: { type: "string", description: "永久素材 media_id。" } },
+      required: ["media_id"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { media_id } = z.object({ media_id: z.string().trim().min(1) }).parse(args);
+      return getMaterial(media_id);
+    },
+  },
+  {
+    name: "wechat_get_material_count",
+    description: "获取永久素材总数（图片/视频/语音/图文分别计数）。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => getMaterialCount(),
+  },
+  {
+    name: "wechat_get_mass_speed",
+    description: "查询当前群发速度等级（0-3，数字越大越快），只读。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => getMassSpeed(),
+  },
+  {
+    name: "wechat_create_menu",
+    description:
+      "创建公众号自定义菜单。button 是微信菜单结构数组（最多 3 个一级菜单，每个最多 5 个二级菜单），元素形如 {type, name, url/key}，type 常用 view（网页，配 url）或 click（点击事件，配 key）。会整体替换现有菜单。",
+    inputSchema: {
+      type: "object",
+      properties: { button: { type: "array", items: { type: "object" }, description: "菜单结构数组。" } },
+      required: ["button"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { button } = z.object({ button: z.array(z.record(z.string(), z.unknown())).min(1).max(3) }).parse(args);
+      return createMenu(button);
+    },
+  },
+  {
+    name: "wechat_get_menu",
+    description: "查询当前自定义菜单的配置结构。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => getMenu(),
+  },
+  {
+    name: "wechat_delete_menu",
+    description: "删除当前自定义菜单（默认菜单和全部个性化菜单一起删），删除后粉丝看不到菜单，需重新创建。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => deleteMenu(),
+  },
+  {
+    name: "wechat_send_customer_message",
+    description:
+      "给某个粉丝发送客服消息。有触发条件：用户发消息后 48 小时内最多 5 条、关注/扫码/点菜单后 1 分钟内 3 条，超窗口会被微信拒绝。msgtype 决定 content 结构：text={content}、image={media_id}、link={title,url,thumb_url}、miniprogrampage={title,pagepath,thumb_media_id} 等。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        openid: { type: "string", description: "接收消息的粉丝 openid。" },
+        msgtype: { type: "string", description: "消息类型：text/image/voice/video/music/link/miniprogrampage 等。" },
+        content: { type: "object", description: "按 msgtype 对应的内容结构，如 text 传 {content: \"你好\"}。" },
+        customservice: { type: "string", description: "可选，用某个客服账号身份发送（wechat_list_kf_accounts 查）。" },
+      },
+      required: ["openid", "msgtype", "content"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = customerMessageSchema.parse(args);
+      return sendCustomerMessage({ touser: input.openid, msgtype: input.msgtype, content: input.content, customservice: input.customservice });
+    },
+  },
+  {
+    name: "wechat_send_typing",
+    description: "给某粉丝设置客服输入状态（让对方看到“对方正在输入…”）。",
+    inputSchema: {
+      type: "object",
+      properties: { openid: { type: "string", description: "粉丝 openid。" } },
+      required: ["openid"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { openid } = z.object({ openid: z.string().trim().min(1) }).parse(args);
+      return sendTyping(openid);
+    },
+  },
+  {
+    name: "wechat_list_kf_accounts",
+    description: "列出公众号的客服账号（发送客服消息时可指定用哪个客服身份）。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => listKfAccounts(),
   },
 ];
 

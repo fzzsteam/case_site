@@ -1,4 +1,4 @@
-import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
+import { closeComments, deleteComment, deleteCommentReply, listComments, markComment, openComments, replyComment, unmarkComment } from "@/lib/wechat/comment";
 import { postJson } from "@/lib/wechat/client";
 
 vi.mock("@/lib/wechat/client", () => ({ postJson: vi.fn() }));
@@ -59,5 +59,24 @@ it("标记精选 / 取消精选 / 删除评论都走对应接口", async () => {
     "/cgi-bin/comment/unmarkelect",
     "/cgi-bin/comment/delete",
   ]);
+  expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ msg_data_id: 1001, index: 0, user_comment_id: 11 });
+});
+
+it("打开与关闭文章留言", async () => {
+  vi.mocked(postJson).mockResolvedValue({ errcode: 0 } as never);
+
+  await openComments({ msgDataId: 1001, index: 0 });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/comment/open");
+  expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ msg_data_id: 1001, index: 0 });
+
+  await closeComments({ msgDataId: 1001, index: 0 });
+  expect(vi.mocked(postJson).mock.calls[1][0]).toBe("/cgi-bin/comment/close");
+});
+
+it("删除评论回复", async () => {
+  vi.mocked(postJson).mockResolvedValue({ errcode: 0 } as never);
+
+  await deleteCommentReply({ msgDataId: 1001, index: 0, userCommentId: 11 });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/comment/reply/delete");
   expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ msg_data_id: 1001, index: 0, user_comment_id: 11 });
 });

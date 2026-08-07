@@ -85,3 +85,8 @@ export async function getMassStatus(msgId: number): Promise<MassStatus> {
 export async function deleteMass(msgId: number, articleIdx?: number): Promise<unknown> {
   return postJson("/cgi-bin/message/mass/delete", articleIdx === undefined ? { msg_id: msgId } : { msg_id: msgId, article_idx: articleIdx });
 }
+
+/** 当前群发速度等级（0-3，数字越大越快）。 */
+export function getMassSpeed(): Promise<{ speed?: number }> {
+  return postJson<{ speed?: number }>("/cgi-bin/message/mass/speed/get", {});
+}

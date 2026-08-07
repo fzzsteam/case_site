@@ -78,8 +78,14 @@ export function postJson<T>(path: string, body: unknown): Promise<T> {
   }));
 }
 
-export function getJson<T>(path: string): Promise<T> {
-  return request<T>(path, () => ({ method: "GET" }));
+export function getJson<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
+  const query = params
+    ? Object.entries(params)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+        .join("&")
+    : "";
+  return request<T>(`${path}${query ? `?${query}` : ""}`, () => ({ method: "GET" }));
 }
 
 export function postForm<T>(path: string, buildForm: () => FormData): Promise<T> {

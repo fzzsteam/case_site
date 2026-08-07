@@ -217,3 +217,66 @@ export async function getArticleStatsSummary(beginDate: string, endDate: string)
     })),
   };
 }
+
+/** 用户分析数据接口的数据存储起始日。 */
+const USER_DATA_START_DATE = "2014-12-01";
+
+function assertUserStatsDate(beginDate: string, endDate: string): void {
+  if (!DATE_PATTERN.test(beginDate) || !DATE_PATTERN.test(endDate)) throw new Error(`日期格式应为 YYYY-MM-DD，收到：${beginDate} / ${endDate}`);
+  if (beginDate !== endDate) throw new Error("用户分析接口一次只能查同一天，begin_date 必须等于 end_date。");
+  if (beginDate < USER_DATA_START_DATE) throw new Error(`用户数据从 ${USER_DATA_START_DATE} 起才有效，更早的日期查不到有效数据。`);
+  const yesterday = yesterdayIso();
+  if (endDate > yesterday) throw new Error(`当天数据尚未统计完成，最大可查日期是昨天（${yesterday}），建议每天 8 点后查询。`);
+}
+
+type UserSummaryResponse = {
+  list?: Array<{ ref_date?: string; user_source?: number; new_user?: number; cancel_user?: number }>;
+  is_delay?: boolean;
+};
+
+export type UserSummaryResult = {
+  date: string;
+  isDelay: boolean;
+  items: Array<{ date: string; userSource: number; newUsers: number; cancelUsers: number }>;
+};
+
+/** 某天用户增减数据（按来源区分关注渠道）。 */
+export async function getUserSummary(beginDate: string, endDate = beginDate): Promise<UserSummaryResult> {
+  assertUserStatsDate(beginDate, endDate);
+  const data = await postJson<UserSummaryResponse>("/datacube/getusersummary", { begin_date: beginDate, end_date: endDate });
+  return {
+    date: beginDate,
+    isDelay: data.is_delay === true,
+    items: (data.list ?? []).map((item) => ({
+      date: item.ref_date ?? "",
+      userSource: item.user_source ?? 0,
+      newUsers: item.new_user ?? 0,
+      cancelUsers: item.cancel_user ?? 0,
+    })),
+  };
+}
+
+type UserCumulateResponse = {
+  list?: Array<{ ref_date?: string; cumulate_user?: number }>;
+  is_delay?: boolean;
+};
+
+export type UserCumulateResult = {
+  date: string;
+  isDelay: boolean;
+  items: Array<{ date: string; totalUsers: number }>;
+};
+
+/** 某天累计关注用户数。 */
+export async function getUserCumulate(beginDate: string, endDate = beginDate): Promise<UserCumulateResult> {
+  assertUserStatsDate(beginDate, endDate);
+  const data = await postJson<UserCumulateResponse>("/datacube/getusercumulate", { begin_date: beginDate, end_date: endDate });
+  return {
+    date: beginDate,
+    isDelay: data.is_delay === true,
+    items: (data.list ?? []).map((item) => ({
+      date: item.ref_date ?? "",
+      totalUsers: item.cumulate_user ?? 0,
+    })),
+  };
+}

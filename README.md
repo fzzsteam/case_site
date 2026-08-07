@@ -98,6 +98,20 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 | `wechat_get_article_read_stats` | 查某天所有被阅读文章的阅读人数 + 来源 |
 | `wechat_get_article_stats_detail` | 查某天发表文章的完整指标（阅读/分享/点赞/留言/收藏，含标题链接） |
 | `wechat_get_article_stats_summary` | 查一段日期（最长 30 天）的发表内容汇总概览 |
+| `wechat_list_followers` | 关注者 openid 列表（分页） |
+| `wechat_get_user_info` / `wechat_batch_get_user_info` | 粉丝基本信息（关注时间/来源/标签），支持批量 |
+| `wechat_create_tag` / `wechat_update_tag` / `wechat_delete_tag` | 粉丝标签增删改 |
+| `wechat_tag_users` / `wechat_untag_users` | 给粉丝打标签 / 取消标签 |
+| `wechat_list_tag_members` / `wechat_get_user_tags` | 标签下粉丝列表 / 某粉丝的标签 |
+| `wechat_get_followers_stats` / `wechat_get_total_followers` | 每日粉丝增减 / 累计关注 |
+| `wechat_open_comments` / `wechat_close_comments` | 打开 / 关闭文章留言 |
+| `wechat_delete_comment_reply` | 删除留言回复 |
+| `wechat_get_material` / `wechat_get_material_count` | 永久素材详情 / 素材总数 |
+| `wechat_get_mass_speed` | 查询群发速度（只读） |
+| `wechat_create_menu` / `wechat_get_menu` / `wechat_delete_menu` | 自定义菜单创建 / 查询 / 删除 |
+| `wechat_send_customer_message` | 发送客服消息（有 48 小时/条数触发窗口限制） |
+| `wechat_send_typing` | 设置客服输入状态 |
+| `wechat_list_kf_accounts` | 列出客服账号 |
 
 **关于群发**：发布和群发是两套能力——`wechat_publish_draft` 只让文章公开可访问，不推送粉丝；`wechat_mass_send` 才是推送给粉丝的群发。群发不可逆，因此加了防误触机制：
 
@@ -120,7 +134,7 @@ MCP 工具的参数由模型逐 token 生成，图片数据不可能写进参数
 ### 上线检查清单
 
 1. `GET /api/health/egress-ip` 连打 5 次，IP 恒定 → 填入公众号 IP 白名单
-2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 27 个工具
+2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 51 个工具
 3. `wechat_create_upload_url` → curl 传一张图 → 拿到 ref
 4. `wechat_create_draft` 建一篇带封面和正文图的草稿 → **去公众平台后台肉眼确认排版和图片都在**
 5. `wechat_publish_draft` → `wechat_get_publish_status` 轮询到成功 → 打开文章链接确认

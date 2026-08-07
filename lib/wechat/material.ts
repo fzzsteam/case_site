@@ -27,3 +27,12 @@ export async function listMaterials(type: MaterialType, offset: number, count: n
 export function deleteMaterial(mediaId: string): Promise<unknown> {
   return postJson("/cgi-bin/material/del_material", { media_id: mediaId });
 }
+
+/** 根据 media_id 获取永久素材详情（图片/视频等返回不同结构）。 */
+export function getMaterial(mediaId: string): Promise<unknown> {
+  return postJson("/cgi-bin/material/get_material", { media_id: mediaId });
+}
+
+export function getMaterialCount(): Promise<unknown> {
+  return postJson("/cgi-bin/material/get_materialcount", {});
+}

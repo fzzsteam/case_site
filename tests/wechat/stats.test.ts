@@ -1,4 +1,4 @@
-import { getArticleRead, getArticleStatsDetail, getArticleStatsSummary, yesterdayIso } from "@/lib/wechat/stats";
+import { getArticleRead, getArticleStatsDetail, getArticleStatsSummary, getUserCumulate, getUserSummary, yesterdayIso } from "@/lib/wechat/stats";
 import { postJson } from "@/lib/wechat/client";
 
 vi.mock("@/lib/wechat/client", () => ({ postJson: vi.fn() }));
@@ -162,5 +162,41 @@ it("汇总日期范围超过 30 天被拒绝", async () => {
 
 it("汇总的开始日期不能晚于结束日期", async () => {
   await expect(getArticleStatsSummary("2026-08-06", "2026-08-01")).rejects.toThrow(/不能晚于/);
+  expect(postJson).not.toHaveBeenCalled();
+});
+
+it("getUserSummary 查某天粉丝增减并映射", async () => {
+  vi.mocked(postJson).mockResolvedValue({
+    list: [{ ref_date: "2026-08-06", user_source: 0, new_user: 12, cancel_user: 3 }],
+    is_delay: false,
+  } as never);
+
+  await expect(getUserSummary("2026-08-06")).resolves.toEqual({
+    date: "2026-08-06",
+    isDelay: false,
+    items: [{ date: "2026-08-06", userSource: 0, newUsers: 12, cancelUsers: 3 }],
+  });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/datacube/getusersummary");
+  expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ begin_date: "2026-08-06", end_date: "2026-08-06" });
+});
+
+it("getUserCumulate 查某天累计关注", async () => {
+  vi.mocked(postJson).mockResolvedValue({ list: [{ ref_date: "2026-08-06", cumulate_user: 1000 }] } as never);
+
+  await expect(getUserCumulate("2026-08-06")).resolves.toEqual({
+    date: "2026-08-06",
+    isDelay: false,
+    items: [{ date: "2026-08-06", totalUsers: 1000 }],
+  });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/datacube/getusercumulate");
+});
+
+it("用户统计接口要求起止日期是同一天", async () => {
+  await expect(getUserSummary("2026-08-01", "2026-08-06")).rejects.toThrow(/同一天/);
+  expect(postJson).not.toHaveBeenCalled();
+});
+
+it("用户统计接口拒绝 2014-12-01 之前的日期", async () => {
+  await expect(getUserCumulate("2014-11-30")).rejects.toThrow(/2014-12-01/);
   expect(postJson).not.toHaveBeenCalled();
 });

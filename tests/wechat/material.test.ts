@@ -1,4 +1,4 @@
-import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
+import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
 import { postJson } from "@/lib/wechat/client";
 
 vi.mock("@/lib/wechat/client", () => ({ postJson: vi.fn() }));
@@ -28,4 +28,19 @@ it("删除永久素材", async () => {
   await deleteMaterial("m-1");
   expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/material/del_material");
   expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ media_id: "m-1" });
+});
+
+it("获取永久素材详情", async () => {
+  vi.mocked(postJson).mockResolvedValue({ media_id: "m-1", name: "封面.png" } as never);
+
+  await expect(getMaterial("m-1")).resolves.toMatchObject({ media_id: "m-1" });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/material/get_material");
+  expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ media_id: "m-1" });
+});
+
+it("获取永久素材总数", async () => {
+  vi.mocked(postJson).mockResolvedValue({ image_count: 3, video_count: 1, voice_count: 0, news_count: 2 } as never);
+
+  await expect(getMaterialCount()).resolves.toMatchObject({ image_count: 3, news_count: 2 });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/material/get_materialcount");
 });

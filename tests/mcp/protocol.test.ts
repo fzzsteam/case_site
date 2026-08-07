@@ -1,11 +1,14 @@
 import { handleMessage, SERVER_INSTRUCTIONS, SERVER_NAME } from "@/lib/mcp/protocol";
 import { createDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft } from "@/lib/wechat/draft";
-import { deleteMass, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
+import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
 import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
-import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
-import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
+import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
+import { closeComments, deleteComment, deleteCommentReply, listComments, markComment, openComments, replyComment, unmarkComment } from "@/lib/wechat/comment";
 import { listTags } from "@/lib/wechat/tag";
-import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, yesterdayIso } from "@/lib/wechat/stats";
+import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, getUserCumulate, getUserSummary, yesterdayIso } from "@/lib/wechat/stats";
+import { batchGetUserInfo, createTag, deleteTag, getUserInfo, getUserTags, listFollowers, listTagMembers, tagUsers, untagUsers, updateTag } from "@/lib/wechat/user";
+import { createMenu, deleteMenu, getMenu } from "@/lib/wechat/menu";
+import { listKfAccounts, sendCustomerMessage, sendTyping } from "@/lib/wechat/customer";
 import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { WechatApiError } from "@/lib/wechat/errors";
@@ -25,24 +28,44 @@ vi.mock("@/lib/wechat/mass", () => ({
   massSendByOpenids: vi.fn(),
   getMassStatus: vi.fn(),
   deleteMass: vi.fn(),
+  getMassSpeed: vi.fn(),
 }));
 vi.mock("@/lib/wechat/publish", () => ({ listPublished: vi.fn(), deletePublished: vi.fn(), getPublishedArticle: vi.fn() }));
-vi.mock("@/lib/wechat/material", () => ({ listMaterials: vi.fn(), deleteMaterial: vi.fn() }));
+vi.mock("@/lib/wechat/material", () => ({ listMaterials: vi.fn(), deleteMaterial: vi.fn(), getMaterial: vi.fn(), getMaterialCount: vi.fn() }));
 vi.mock("@/lib/wechat/comment", () => ({
   listComments: vi.fn(),
   replyComment: vi.fn(),
   markComment: vi.fn(),
   unmarkComment: vi.fn(),
   deleteComment: vi.fn(),
+  openComments: vi.fn(),
+  closeComments: vi.fn(),
+  deleteCommentReply: vi.fn(),
 }));
 vi.mock("@/lib/wechat/tag", () => ({ listTags: vi.fn() }));
 vi.mock("@/lib/wechat/stats", () => ({
   getArticleRead: vi.fn(),
   getArticleStatsDetail: vi.fn(),
   getArticleStatsSummary: vi.fn(),
+  getUserSummary: vi.fn(),
+  getUserCumulate: vi.fn(),
   yesterdayIso: vi.fn(() => "2026-08-06"),
   daysAgoIso: vi.fn(() => "2026-07-31"),
 }));
+vi.mock("@/lib/wechat/user", () => ({
+  listFollowers: vi.fn(),
+  getUserInfo: vi.fn(),
+  batchGetUserInfo: vi.fn(),
+  createTag: vi.fn(),
+  updateTag: vi.fn(),
+  deleteTag: vi.fn(),
+  tagUsers: vi.fn(),
+  untagUsers: vi.fn(),
+  listTagMembers: vi.fn(),
+  getUserTags: vi.fn(),
+}));
+vi.mock("@/lib/wechat/menu", () => ({ createMenu: vi.fn(), getMenu: vi.fn(), deleteMenu: vi.fn() }));
+vi.mock("@/lib/wechat/customer", () => ({ sendCustomerMessage: vi.fn(), sendTyping: vi.fn(), listKfAccounts: vi.fn() }));
 vi.mock("@/lib/wechat/content", () => ({ rewriteContentImages: vi.fn() }));
 vi.mock("@/lib/wechat/media", () => ({ fetchRemoteImage: vi.fn(), uploadThumbMaterial: vi.fn() }));
 
@@ -103,7 +126,7 @@ describe("协议握手", () => {
 });
 
 describe("tools/list", () => {
-  it("暴露约定的 27 个工具", async () => {
+  it("暴露约定的 51 个工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
     const { tools } = response?.result as { tools: Array<{ name: string; inputSchema: unknown }> };
 
@@ -135,6 +158,30 @@ describe("tools/list", () => {
       "wechat_get_article_read_stats",
       "wechat_get_article_stats_detail",
       "wechat_get_article_stats_summary",
+      "wechat_list_followers",
+      "wechat_get_user_info",
+      "wechat_batch_get_user_info",
+      "wechat_create_tag",
+      "wechat_update_tag",
+      "wechat_delete_tag",
+      "wechat_tag_users",
+      "wechat_untag_users",
+      "wechat_list_tag_members",
+      "wechat_get_user_tags",
+      "wechat_get_followers_stats",
+      "wechat_get_total_followers",
+      "wechat_open_comments",
+      "wechat_close_comments",
+      "wechat_delete_comment_reply",
+      "wechat_get_material",
+      "wechat_get_material_count",
+      "wechat_get_mass_speed",
+      "wechat_create_menu",
+      "wechat_get_menu",
+      "wechat_delete_menu",
+      "wechat_send_customer_message",
+      "wechat_send_typing",
+      "wechat_list_kf_accounts",
     ]);
     expect(tools.every((tool) => tool.inputSchema)).toBe(true);
   });
@@ -417,6 +464,140 @@ describe("数据统计工具", () => {
     await call("wechat_get_article_stats_summary", {});
     expect(daysAgoIso).toHaveBeenCalledWith(7);
     expect(getArticleStatsSummary).toHaveBeenCalledWith("2026-07-31", "2026-08-06");
+  });
+});
+
+describe("粉丝与标签工具", () => {
+  it("关注者列表支持游标", async () => {
+    vi.mocked(listFollowers).mockResolvedValue({ total: 1, count: 1, openids: ["o-1"], nextOpenid: "o-2" });
+    await call("wechat_list_followers", { next_openid: "o-2" });
+    expect(listFollowers).toHaveBeenCalledWith("o-2");
+  });
+
+  it("获取用户信息与批量获取", async () => {
+    vi.mocked(getUserInfo).mockResolvedValue({ subscribe: 1, openid: "o-1", subscribeTime: "", tagidList: [] });
+    vi.mocked(batchGetUserInfo).mockResolvedValue([]);
+
+    await call("wechat_get_user_info", { openid: "o-1" });
+    expect(getUserInfo).toHaveBeenCalledWith("o-1", "zh_CN");
+
+    await call("wechat_batch_get_user_info", { openids: ["o-1", "o-2"] });
+    expect(batchGetUserInfo).toHaveBeenCalledWith(["o-1", "o-2"]);
+  });
+
+  it("标签增删改", async () => {
+    vi.mocked(createTag).mockResolvedValue({ id: 101, name: "vip" });
+    vi.mocked(updateTag).mockResolvedValue({ errcode: 0 });
+    vi.mocked(deleteTag).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_create_tag", { name: "vip" });
+    expect(createTag).toHaveBeenCalledWith("vip");
+
+    await call("wechat_update_tag", { id: 101, name: "vip2" });
+    expect(updateTag).toHaveBeenCalledWith(101, "vip2");
+
+    await call("wechat_delete_tag", { id: 101 });
+    expect(deleteTag).toHaveBeenCalledWith(101);
+  });
+
+  it("打标签与取消标签", async () => {
+    vi.mocked(tagUsers).mockResolvedValue({ errcode: 0 });
+    vi.mocked(untagUsers).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_tag_users", { tag_id: 101, openids: ["o-1"] });
+    expect(tagUsers).toHaveBeenCalledWith(101, ["o-1"]);
+
+    await call("wechat_untag_users", { tag_id: 101, openids: ["o-1"] });
+    expect(untagUsers).toHaveBeenCalledWith(101, ["o-1"]);
+  });
+
+  it("标签下粉丝列表与用户标签", async () => {
+    vi.mocked(listTagMembers).mockResolvedValue({ count: 1, openids: ["o-1"], nextOpenid: "o-2" });
+    vi.mocked(getUserTags).mockResolvedValue([1, 2]);
+
+    await call("wechat_list_tag_members", { tag_id: 101, next_openid: "o-2" });
+    expect(listTagMembers).toHaveBeenCalledWith(101, "o-2");
+
+    await call("wechat_get_user_tags", { openid: "o-1" });
+    expect(getUserTags).toHaveBeenCalledWith("o-1");
+  });
+});
+
+describe("粉丝统计与补全工具", () => {
+  it("粉丝增减与累计关注支持默认昨天", async () => {
+    vi.mocked(getUserSummary).mockResolvedValue({ date: "2026-08-06", isDelay: false, items: [] });
+    vi.mocked(getUserCumulate).mockResolvedValue({ date: "2026-08-06", isDelay: false, items: [] });
+
+    await call("wechat_get_followers_stats", {});
+    expect(getUserSummary).toHaveBeenCalledWith("2026-08-06");
+
+    await call("wechat_get_total_followers", {});
+    expect(getUserCumulate).toHaveBeenCalledWith("2026-08-06");
+  });
+
+  it("开/关留言与删除回复", async () => {
+    vi.mocked(openComments).mockResolvedValue({ errcode: 0 });
+    vi.mocked(closeComments).mockResolvedValue({ errcode: 0 });
+    vi.mocked(deleteCommentReply).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_open_comments", { msg_data_id: 1001 });
+    expect(openComments).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined });
+
+    await call("wechat_close_comments", { msg_data_id: 1001 });
+    expect(closeComments).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined });
+
+    await call("wechat_delete_comment_reply", { msg_data_id: 1001, user_comment_id: 11 });
+    expect(deleteCommentReply).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, userCommentId: 11 });
+  });
+
+  it("素材详情 / 素材总数 / 群发速度", async () => {
+    vi.mocked(getMaterial).mockResolvedValue({ media_id: "m-1" });
+    vi.mocked(getMaterialCount).mockResolvedValue({ image_count: 3 });
+    vi.mocked(getMassSpeed).mockResolvedValue({ speed: 1 });
+
+    await call("wechat_get_material", { media_id: "m-1" });
+    expect(getMaterial).toHaveBeenCalledWith("m-1");
+
+    await call("wechat_get_material_count", {});
+    expect(getMaterialCount).toHaveBeenCalled();
+
+    await call("wechat_get_mass_speed", {});
+    expect(getMassSpeed).toHaveBeenCalled();
+  });
+});
+
+describe("自定义菜单工具", () => {
+  it("创建 / 查询 / 删除菜单", async () => {
+    vi.mocked(createMenu).mockResolvedValue({ errcode: 0 });
+    vi.mocked(getMenu).mockResolvedValue({ menu: {} });
+    vi.mocked(deleteMenu).mockResolvedValue({ errcode: 0 });
+    const button = [{ type: "view", name: "官网", url: "https://example.com" }];
+
+    await call("wechat_create_menu", { button });
+    expect(createMenu).toHaveBeenCalledWith(button);
+
+    await call("wechat_get_menu", {});
+    expect(getMenu).toHaveBeenCalled();
+
+    await call("wechat_delete_menu", {});
+    expect(deleteMenu).toHaveBeenCalled();
+  });
+});
+
+describe("客服消息工具", () => {
+  it("发送客服消息 / 输入状态 / 客服列表", async () => {
+    vi.mocked(sendCustomerMessage).mockResolvedValue({ errcode: 0 });
+    vi.mocked(sendTyping).mockResolvedValue({ errcode: 0 });
+    vi.mocked(listKfAccounts).mockResolvedValue([]);
+
+    await call("wechat_send_customer_message", { openid: "o-1", msgtype: "text", content: { content: "你好" } });
+    expect(sendCustomerMessage).toHaveBeenCalledWith({ touser: "o-1", msgtype: "text", content: { content: "你好" } });
+
+    await call("wechat_send_typing", { openid: "o-1" });
+    expect(sendTyping).toHaveBeenCalledWith("o-1");
+
+    await call("wechat_list_kf_accounts", {});
+    expect(listKfAccounts).toHaveBeenCalled();
   });
 });
 

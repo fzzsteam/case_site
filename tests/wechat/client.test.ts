@@ -107,3 +107,15 @@ it("getJson 用 GET 请求并返回解析结果", async () => {
   expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "GET" });
   expect((fetchMock.mock.calls[1][1] as RequestInit).body).toBeUndefined();
 });
+
+it("getJson 支持查询参数并编码", async () => {
+  fetchMock
+    .mockResolvedValueOnce(jsonResponse({ access_token: "token-1", expires_in: 7200 }))
+    .mockResolvedValueOnce(jsonResponse({ subscribe: 1, openid: "o-1" }));
+
+  await expect(getJson("/cgi-bin/user/info", { openid: "o-1", lang: "zh_CN" })).resolves.toMatchObject({ openid: "o-1" });
+
+  const url = fetchMock.mock.calls[1][0] as string;
+  expect(url).toContain("/cgi-bin/user/info?openid=o-1&lang=zh_CN&access_token=token-1");
+  expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "GET" });
+});

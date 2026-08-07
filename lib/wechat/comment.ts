@@ -71,3 +71,18 @@ export function unmarkComment(target: CommentTarget): Promise<unknown> {
 export function deleteComment(target: CommentTarget): Promise<unknown> {
   return postJson("/cgi-bin/comment/delete", commentTargetBody(target));
 }
+
+/** 打开已发布文章的留言功能。 */
+export function openComments(target: Omit<CommentTarget, "userCommentId">): Promise<unknown> {
+  return postJson("/cgi-bin/comment/open", { msg_data_id: target.msgDataId, index: target.index ?? 0 });
+}
+
+/** 关闭已发布文章的留言功能。 */
+export function closeComments(target: Omit<CommentTarget, "userCommentId">): Promise<unknown> {
+  return postJson("/cgi-bin/comment/close", { msg_data_id: target.msgDataId, index: target.index ?? 0 });
+}
+
+/** 删除某条评论的回复。 */
+export function deleteCommentReply(target: CommentTarget): Promise<unknown> {
+  return postJson("/cgi-bin/comment/reply/delete", commentTargetBody(target));
+}

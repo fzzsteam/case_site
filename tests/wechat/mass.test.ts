@@ -1,4 +1,4 @@
-import { deleteMass, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
+import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
 import { postJson } from "@/lib/wechat/client";
 
 vi.mock("@/lib/wechat/client", () => ({ postJson: vi.fn() }));
@@ -105,4 +105,11 @@ it("删除群发不带 article_idx 时只传 msg_id", async () => {
 
   await deleteMass(1001);
   expect(vi.mocked(postJson).mock.calls[0][1]).toEqual({ msg_id: 1001 });
+});
+
+it("获取当前群发速度", async () => {
+  vi.mocked(postJson).mockResolvedValue({ speed: 1 } as never);
+
+  await expect(getMassSpeed()).resolves.toMatchObject({ speed: 1 });
+  expect(vi.mocked(postJson).mock.calls[0][0]).toBe("/cgi-bin/message/mass/speed/get");
 });
