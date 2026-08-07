@@ -5,6 +5,7 @@ import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wecha
 import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
 import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
 import { listTags } from "@/lib/wechat/tag";
+import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, yesterdayIso } from "@/lib/wechat/stats";
 import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { WechatApiError } from "@/lib/wechat/errors";
@@ -35,6 +36,13 @@ vi.mock("@/lib/wechat/comment", () => ({
   deleteComment: vi.fn(),
 }));
 vi.mock("@/lib/wechat/tag", () => ({ listTags: vi.fn() }));
+vi.mock("@/lib/wechat/stats", () => ({
+  getArticleRead: vi.fn(),
+  getArticleStatsDetail: vi.fn(),
+  getArticleStatsSummary: vi.fn(),
+  yesterdayIso: vi.fn(() => "2026-08-06"),
+  daysAgoIso: vi.fn(() => "2026-07-31"),
+}));
 vi.mock("@/lib/wechat/content", () => ({ rewriteContentImages: vi.fn() }));
 vi.mock("@/lib/wechat/media", () => ({ fetchRemoteImage: vi.fn(), uploadThumbMaterial: vi.fn() }));
 
@@ -95,7 +103,7 @@ describe("协议握手", () => {
 });
 
 describe("tools/list", () => {
-  it("暴露约定的 24 个工具", async () => {
+  it("暴露约定的 27 个工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
     const { tools } = response?.result as { tools: Array<{ name: string; inputSchema: unknown }> };
 
@@ -124,6 +132,9 @@ describe("tools/list", () => {
       "wechat_unmark_comment",
       "wechat_delete_comment",
       "wechat_list_tags",
+      "wechat_get_article_read_stats",
+      "wechat_get_article_stats_detail",
+      "wechat_get_article_stats_summary",
     ]);
     expect(tools.every((tool) => tool.inputSchema)).toBe(true);
   });
@@ -366,6 +377,46 @@ describe("素材 / 留言 / 标签", () => {
     vi.mocked(listTags).mockResolvedValue([{ id: 1, name: "vip", count: 3 }]);
     const { data } = resultPayload(await call("wechat_list_tags", {}));
     expect(data).toEqual([{ id: 1, name: "vip", count: 3 }]);
+  });
+});
+
+describe("数据统计工具", () => {
+  it("按指定日期查阅读数", async () => {
+    vi.mocked(getArticleRead).mockResolvedValue({ date: "2026-08-06", isDelay: false, articles: [] });
+    await call("wechat_get_article_read_stats", { date: "2026-08-06" });
+    expect(getArticleRead).toHaveBeenCalledWith("2026-08-06");
+  });
+
+  it("不传日期时默认查昨天", async () => {
+    vi.mocked(getArticleRead).mockResolvedValue({ date: "2026-08-06", isDelay: false, articles: [] });
+    await call("wechat_get_article_read_stats", {});
+    expect(yesterdayIso).toHaveBeenCalled();
+    expect(getArticleRead).toHaveBeenCalledWith("2026-08-06");
+  });
+
+  it("查某天发表文章的详细指标", async () => {
+    vi.mocked(getArticleStatsDetail).mockResolvedValue({ date: "2026-08-06", isDelay: false, articles: [] });
+    await call("wechat_get_article_stats_detail", { date: "2026-08-06" });
+    expect(getArticleStatsDetail).toHaveBeenCalledWith("2026-08-06");
+  });
+
+  it("日期格式非法时返回参数错误", async () => {
+    const message = errorText(await call("wechat_get_article_read_stats", { date: "2026/08/06" }));
+    expect(message).toContain("参数不合法");
+    expect(getArticleRead).not.toHaveBeenCalled();
+  });
+
+  it("汇总接口支持指定日期范围", async () => {
+    vi.mocked(getArticleStatsSummary).mockResolvedValue({ beginDate: "2026-07-31", endDate: "2026-08-06", isDelay: false, days: [] });
+    await call("wechat_get_article_stats_summary", { begin_date: "2026-07-31", end_date: "2026-08-06" });
+    expect(getArticleStatsSummary).toHaveBeenCalledWith("2026-07-31", "2026-08-06");
+  });
+
+  it("汇总接口不传日期时默认最近 7 天", async () => {
+    vi.mocked(getArticleStatsSummary).mockResolvedValue({ beginDate: "2026-07-31", endDate: "2026-08-06", isDelay: false, days: [] });
+    await call("wechat_get_article_stats_summary", {});
+    expect(daysAgoIso).toHaveBeenCalledWith(7);
+    expect(getArticleStatsSummary).toHaveBeenCalledWith("2026-07-31", "2026-08-06");
   });
 });
 

@@ -6,6 +6,7 @@ import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wecha
 import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
 import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
 import { listTags } from "@/lib/wechat/tag";
+import { daysAgoIso, getArticleRead, getArticleStatsDetail, getArticleStatsSummary, yesterdayIso } from "@/lib/wechat/stats";
 import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
@@ -48,6 +49,13 @@ const commentTargetSchema = z.object({
   msg_data_id: z.number(),
   index: z.number().int().min(0).optional(),
   user_comment_id: z.number(),
+});
+
+const statsDateSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式应为 YYYY-MM-DD").optional() });
+
+const statsRangeSchema = z.object({
+  begin_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式应为 YYYY-MM-DD").optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日期格式应为 YYYY-MM-DD").optional(),
 });
 
 /** 封面既接受上传得到的 wxmedia: 句柄，也接受公网图片地址（由服务端代抓再转投微信）。 */
@@ -248,7 +256,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_mass_send",
     description:
-      "把草稿箱里的文章群发给粉丝（全员或某个标签）。会推送给粉丝、不可逆，且服务号每月每用户最多收到 4 条群发。必须先 wechat_mass_preview 预览并征得用户明确同意，且必须传 confirm=true 和 clientmsgid（24 小时内相同 clientmsgid 会被微信拒绝，防止重复推送）。",
+      "把草稿箱里的文章群发给粉丝（全员或某个标签）。会推送给粉丝、不可逆。频次限制：认证公众号每天可群发 1 次（全员或按标签）；服务号每月每用户最多收到 4 条。必须先 wechat_mass_preview 预览并征得用户明确同意，且必须传 confirm=true 和 clientmsgid（24 小时内相同 clientmsgid 会被微信拒绝，防止重复推送）。",
     inputSchema: {
       type: "object",
       properties: {
@@ -276,13 +284,13 @@ export const TOOLS: ToolDefinition[] = [
         sendIgnoreReprint: input.send_ignore_reprint,
         clientmsgid: input.clientmsgid,
       });
-      return { ...result, note: "群发任务已提交，用 wechat_mass_status 轮询结果。服务号每月每用户最多收到 4 条群发，超额部分微信会自动过滤。" };
+      return { ...result, note: "群发任务已提交，用 wechat_mass_status 轮询结果。认证公众号每天可群发 1 次；服务号每月每用户最多收到 4 条，超额部分微信会自动过滤。" };
     },
   },
   {
     name: "wechat_mass_send_by_openids",
     description:
-      "按指定 OpenID 列表群发文章（服务号接口，不进入历史消息列表）。同样不可逆：必须先预览并征得用户明确同意，传 confirm=true 和 clientmsgid。",
+      "按指定 OpenID 列表群发文章（仅认证服务号可用，认证公众号/订阅号调用会返回接口权限错误；不进入历史消息列表）。同样不可逆：必须先预览并征得用户明确同意，传 confirm=true 和 clientmsgid。",
     inputSchema: {
       type: "object",
       properties: {
@@ -556,6 +564,53 @@ export const TOOLS: ToolDefinition[] = [
     description: "列出公众号的粉丝标签（id/名称/人数），供 wechat_mass_send 按标签群发时选 tag_id。",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: async () => listTags(),
+  },
+  {
+    name: "wechat_get_article_read_stats",
+    description:
+      "查某一天所有被阅读过的发表内容的阅读人数和来源（公众号消息/朋友圈/搜一搜等）。返回的是当天所有文章，不是单篇；要某篇的数据按返回的 msgid（群发/发布返回的 msg_data_id_序号）或标题过滤。数据从 2025-11-01 起有效，且只能查 1 天，最大到昨天（建议每天 8 点后查前一天）。",
+    inputSchema: {
+      type: "object",
+      properties: { date: { type: "string", description: "要查询的日期 YYYY-MM-DD，默认昨天。" } },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { date } = statsDateSchema.parse(args ?? {});
+      return getArticleRead(date ?? yesterdayIso());
+    },
+  },
+  {
+    name: "wechat_get_article_stats_detail",
+    description:
+      "查某一天发表的所有文章的详细数据：标题、链接、阅读/分享/在看/点赞/留言/收藏/赞赏、阅读完成率、平均阅读时长、阅读来源。每篇只统计发表后 30 天。想确认某篇文章的阅读数时用这个，按标题或链接对号。数据从 2025-11-01 起有效，只能查 1 天，最大到昨天。",
+    inputSchema: {
+      type: "object",
+      properties: { date: { type: "string", description: "要查询的日期 YYYY-MM-DD，默认昨天。" } },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { date } = statsDateSchema.parse(args ?? {});
+      return getArticleStatsDetail(date ?? yesterdayIso());
+    },
+  },
+  {
+    name: "wechat_get_article_stats_summary",
+    description:
+      "查一段日期内账号发表内容的汇总概览（阅读/分享/在看/点赞/留言/收藏/跳转原文人数/发布篇数），最长 30 天，适合看整体表现。数据从 2025-11-01 起有效，结束日期最大到昨天。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        begin_date: { type: "string", description: "开始日期 YYYY-MM-DD，默认最近 7 天。" },
+        end_date: { type: "string", description: "结束日期 YYYY-MM-DD，默认昨天。" },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const input = statsRangeSchema.parse(args ?? {});
+      const endDate = input.end_date ?? yesterdayIso();
+      const beginDate = input.begin_date ?? daysAgoIso(7);
+      return getArticleStatsSummary(beginDate, endDate);
+    },
   },
 ];
 

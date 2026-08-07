@@ -85,7 +85,7 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 | `wechat_get_published_article` | 获取已发布图文详情 |
 | `wechat_mass_preview` | 把文章预览推送到指定微信（运营者核对排版，不计群发次数） |
 | `wechat_mass_send` | 群发给粉丝（全员或按标签，**不可逆**，必须 confirm=true + clientmsgid） |
-| `wechat_mass_send_by_openids` | 按 OpenID 列表群发（服务号） |
+| `wechat_mass_send_by_openids` | 按 OpenID 列表群发（仅认证服务号） |
 | `wechat_mass_status` | 查询群发发送状态 |
 | `wechat_mass_delete` | 删除已群发消息 |
 | `wechat_list_materials` | 分类型列出永久素材 |
@@ -95,15 +95,21 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 | `wechat_mark_comment` / `wechat_unmark_comment` | 精选 / 取消精选留言 |
 | `wechat_delete_comment` | 删除留言 |
 | `wechat_list_tags` | 列出粉丝标签（按标签群发时选 tag_id） |
+| `wechat_get_article_read_stats` | 查某天所有被阅读文章的阅读人数 + 来源 |
+| `wechat_get_article_stats_detail` | 查某天发表文章的完整指标（阅读/分享/点赞/留言/收藏，含标题链接） |
+| `wechat_get_article_stats_summary` | 查一段日期（最长 30 天）的发表内容汇总概览 |
 
-**关于群发**：发布和群发是两套能力——`wechat_publish_draft` 只让文章公开可访问，不推送粉丝；`wechat_mass_send` 才是推送给粉丝的群发。群发不可逆，服务号每月每用户最多收到 4 条，因此加了防误触机制：
+**关于群发**：发布和群发是两套能力——`wechat_publish_draft` 只让文章公开可访问，不推送粉丝；`wechat_mass_send` 才是推送给粉丝的群发。群发不可逆，因此加了防误触机制：
 
 - 工具层强制 `confirm=true`，且 instructions 要求 agent 必须先 `wechat_mass_preview` 预览、征得用户明确确认后才能群发；
 - `clientmsgid` 必填，微信侧 24 小时内相同 id 拒绝重复推送（错误码 45065）；
 - 群发全员（`is_to_all=true`）每天最多一次并进入历史消息列表；按标签群发必须带 `tag_id`；
+- 频次限制：认证公众号每天可群发 1 次（全员或按标签）；服务号每月每用户最多收到 4 条。按 OpenID 群发（`wechat_mass_send_by_openids`）仅认证服务号可用；
 - 建议在公众号后台「设置-安全中心-风险操作保护」开启 **API 群发保护**，群发全员时管理员需在微信后台确认，30 分钟未确认自动失败。
 
 所有接口均要求账号通过微信认证；个人主体或未认证账号自 2025 年 7 月起会被回收发布类接口权限。
+
+**关于阅读数**：数据统计接口（`datacube`）向所有认证公众号开放。阅读数按日期返回当天所有文章，不能按单篇 id 直接查——要某篇的数据用返回的 `msgid`（群发/发布返回的 `msg_data_id_序号`）或标题过滤。数据从 2025-11-01 起有效，每次只能查 1 天，最大到昨天，建议每天 8 点后查询前一天；`wechat_get_article_stats_detail` 每篇只统计发表后 30 天。
 
 ### 图片为什么要走 curl
 
@@ -114,14 +120,15 @@ MCP 工具的参数由模型逐 token 生成，图片数据不可能写进参数
 ### 上线检查清单
 
 1. `GET /api/health/egress-ip` 连打 5 次，IP 恒定 → 填入公众号 IP 白名单
-2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 24 个工具
+2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 27 个工具
 3. `wechat_create_upload_url` → curl 传一张图 → 拿到 ref
 4. `wechat_create_draft` 建一篇带封面和正文图的草稿 → **去公众平台后台肉眼确认排版和图片都在**
 5. `wechat_publish_draft` → `wechat_get_publish_status` 轮询到成功 → 打开文章链接确认
 6. `wechat_list_tags` / `wechat_list_published` 各调一次，确认账号权限正常
 7. 群发链路：`wechat_mass_preview`（发给运营者微信号）→ 用户确认 → `wechat_mass_send`（按标签，`is_to_all=false`，confirm=true + clientmsgid）→ `wechat_mass_status` 轮询成功 → 粉丝侧收到
 8. 用相同 `clientmsgid` 重复调群发，确认返回 45065 被拦截
-9. 用一个错误的 Token 调一次，确认返回 401
+9. `wechat_get_article_read_stats` 查昨天，确认能取到阅读数据（当天没人读时返回空列表属正常）
+10. 用一个错误的 Token 调一次，确认返回 401
 
 ## 验证
 
