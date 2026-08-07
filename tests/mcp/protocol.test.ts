@@ -1,5 +1,10 @@
 import { handleMessage, SERVER_INSTRUCTIONS, SERVER_NAME } from "@/lib/mcp/protocol";
-import { createDraft, getPublishStatus, listDrafts, submitPublish, updateDraft } from "@/lib/wechat/draft";
+import { createDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft } from "@/lib/wechat/draft";
+import { deleteMass, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
+import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
+import { deleteMaterial, listMaterials } from "@/lib/wechat/material";
+import { deleteComment, listComments, markComment, replyComment, unmarkComment } from "@/lib/wechat/comment";
+import { listTags } from "@/lib/wechat/tag";
 import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { WechatApiError } from "@/lib/wechat/errors";
@@ -10,7 +15,26 @@ vi.mock("@/lib/wechat/draft", () => ({
   listDrafts: vi.fn(),
   submitPublish: vi.fn(),
   getPublishStatus: vi.fn(),
+  getDraft: vi.fn(),
+  deleteDraft: vi.fn(),
 }));
+vi.mock("@/lib/wechat/mass", () => ({
+  massPreview: vi.fn(),
+  massSendAll: vi.fn(),
+  massSendByOpenids: vi.fn(),
+  getMassStatus: vi.fn(),
+  deleteMass: vi.fn(),
+}));
+vi.mock("@/lib/wechat/publish", () => ({ listPublished: vi.fn(), deletePublished: vi.fn(), getPublishedArticle: vi.fn() }));
+vi.mock("@/lib/wechat/material", () => ({ listMaterials: vi.fn(), deleteMaterial: vi.fn() }));
+vi.mock("@/lib/wechat/comment", () => ({
+  listComments: vi.fn(),
+  replyComment: vi.fn(),
+  markComment: vi.fn(),
+  unmarkComment: vi.fn(),
+  deleteComment: vi.fn(),
+}));
+vi.mock("@/lib/wechat/tag", () => ({ listTags: vi.fn() }));
 vi.mock("@/lib/wechat/content", () => ({ rewriteContentImages: vi.fn() }));
 vi.mock("@/lib/wechat/media", () => ({ fetchRemoteImage: vi.fn(), uploadThumbMaterial: vi.fn() }));
 
@@ -71,7 +95,7 @@ describe("协议握手", () => {
 });
 
 describe("tools/list", () => {
-  it("暴露约定的 6 个工具", async () => {
+  it("暴露约定的 24 个工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
     const { tools } = response?.result as { tools: Array<{ name: string; inputSchema: unknown }> };
 
@@ -82,14 +106,32 @@ describe("tools/list", () => {
       "wechat_list_drafts",
       "wechat_publish_draft",
       "wechat_get_publish_status",
+      "wechat_mass_preview",
+      "wechat_mass_send",
+      "wechat_mass_send_by_openids",
+      "wechat_mass_status",
+      "wechat_mass_delete",
+      "wechat_get_draft",
+      "wechat_delete_draft",
+      "wechat_list_published",
+      "wechat_delete_published",
+      "wechat_get_published_article",
+      "wechat_list_materials",
+      "wechat_delete_material",
+      "wechat_list_comments",
+      "wechat_reply_comment",
+      "wechat_mark_comment",
+      "wechat_unmark_comment",
+      "wechat_delete_comment",
+      "wechat_list_tags",
     ]);
     expect(tools.every((tool) => tool.inputSchema)).toBe(true);
   });
 
-  it("不提供群发工具", async () => {
+  it("提供群发工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
     const { tools } = response?.result as { tools: Array<{ name: string }> };
-    expect(tools.some((tool) => /mass|群发/.test(tool.name))).toBe(false);
+    expect(tools.some((tool) => tool.name === "wechat_mass_send")).toBe(true);
   });
 });
 
@@ -192,9 +234,142 @@ describe("草稿与发布", () => {
     const { data } = resultPayload(await call("wechat_get_publish_status", { publish_id: "p-1" }));
     expect(data.articleUrls).toEqual(["https://mp.weixin.qq.com/s/abc"]);
   });
+});
 
-  it("调用不存在的工具返回 -32602", async () => {
-    const response = await call("wechat_mass_send", {});
-    expect(response?.error?.code).toBe(-32602);
+describe("群发工具", () => {
+  it("按微信号预览草稿", async () => {
+    vi.mocked(massPreview).mockResolvedValue({ errcode: 0 });
+    await call("wechat_mass_preview", { media_id: "draft-1", to_wxname: "operator-wx" });
+    expect(massPreview).toHaveBeenCalledWith("draft-1", { wxname: "operator-wx" });
   });
+
+  it("预览必须指定微信号或 openid 之一", async () => {
+    const message = errorText(await call("wechat_mass_preview", { media_id: "draft-1" }));
+    expect(message).toContain("参数不合法");
+    expect(massPreview).not.toHaveBeenCalled();
+  });
+
+  it("群发不带 confirm 时被拦截并提示先预览确认", async () => {
+    const message = errorText(await call("wechat_mass_send", { media_id: "draft-1", clientmsgid: "send-1", is_to_all: true }));
+    expect(message).toContain("确认");
+    expect(massSendAll).not.toHaveBeenCalled();
+  });
+
+  it("群发非全员时必须带 tag_id", async () => {
+    const message = errorText(await call("wechat_mass_send", { media_id: "draft-1", clientmsgid: "send-1", confirm: true }));
+    expect(message).toContain("tag_id");
+    expect(massSendAll).not.toHaveBeenCalled();
+  });
+
+  it("confirm=true 且带 clientmsgid 时才真正群发全员", async () => {
+    vi.mocked(massSendAll).mockResolvedValue({ msg_id: 1001 });
+    const { data } = resultPayload(await call("wechat_mass_send", { media_id: "draft-1", clientmsgid: "send-1", confirm: true, is_to_all: true }));
+    expect(data.msg_id).toBe(1001);
+    expect(massSendAll).toHaveBeenCalledWith({ mediaId: "draft-1", isToAll: true, tagId: undefined, sendIgnoreReprint: undefined, clientmsgid: "send-1" });
+  });
+
+  it("按标签群发透传 tag_id", async () => {
+    vi.mocked(massSendAll).mockResolvedValue({ msg_id: 1002 });
+    await call("wechat_mass_send", { media_id: "draft-1", clientmsgid: "send-2", confirm: true, tag_id: 2 });
+    expect(massSendAll).toHaveBeenCalledWith(expect.objectContaining({ isToAll: false, tagId: 2 }));
+  });
+
+  it("按 OpenID 群发也要 confirm", async () => {
+    const message = errorText(await call("wechat_mass_send_by_openids", { media_id: "draft-1", openids: ["o-1"], clientmsgid: "s" }));
+    expect(message).toContain("确认");
+    expect(massSendByOpenids).not.toHaveBeenCalled();
+  });
+
+  it("按 OpenID 群发成功返回 msg_id", async () => {
+    vi.mocked(massSendByOpenids).mockResolvedValue({ msg_id: 1003 });
+    const { data } = resultPayload(await call("wechat_mass_send_by_openids", { media_id: "draft-1", openids: ["o-1", "o-2"], clientmsgid: "s", confirm: true }));
+    expect(data.msg_id).toBe(1003);
+    expect(massSendByOpenids).toHaveBeenCalledWith("draft-1", ["o-1", "o-2"], "s");
+  });
+
+  it("查询群发状态与删除群发", async () => {
+    vi.mocked(getMassStatus).mockResolvedValue({ msgId: 1001, status: "SEND_SUCCESS", statusText: "发送成功", done: true, totalCount: 1, sentCount: 1, errorCount: 0 });
+    vi.mocked(deleteMass).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_mass_status", { msg_id: 1001 });
+    expect(getMassStatus).toHaveBeenCalledWith(1001);
+
+    await call("wechat_mass_delete", { msg_id: 1001 });
+    expect(deleteMass).toHaveBeenCalledWith(1001, undefined);
+  });
+});
+
+describe("草稿与发布补全", () => {
+  it("获取草稿详情与删除草稿", async () => {
+    vi.mocked(getDraft).mockResolvedValue({ mediaId: "draft-1", articles: [] });
+    vi.mocked(deleteDraft).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_get_draft", { media_id: "draft-1" });
+    expect(getDraft).toHaveBeenCalledWith("draft-1");
+
+    await call("wechat_delete_draft", { media_id: "draft-1" });
+    expect(deleteDraft).toHaveBeenCalledWith("draft-1");
+  });
+
+  it("已发布列表 / 删除 / 详情", async () => {
+    vi.mocked(listPublished).mockResolvedValue({ total: 0, items: [] });
+    vi.mocked(deletePublished).mockResolvedValue({ errcode: 0 });
+    vi.mocked(getPublishedArticle).mockResolvedValue({ article_id: "a-1" });
+
+    await call("wechat_list_published", {});
+    expect(listPublished).toHaveBeenCalledWith(0, 10);
+
+    await call("wechat_delete_published", { article_id: "a-1" });
+    expect(deletePublished).toHaveBeenCalledWith("a-1");
+
+    await call("wechat_get_published_article", { article_id: "a-1" });
+    expect(getPublishedArticle).toHaveBeenCalledWith("a-1");
+  });
+});
+
+describe("素材 / 留言 / 标签", () => {
+  it("素材列表与删除", async () => {
+    vi.mocked(listMaterials).mockResolvedValue({ total: 0, items: [] });
+    vi.mocked(deleteMaterial).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_list_materials", { type: "image" });
+    expect(listMaterials).toHaveBeenCalledWith("image", 0, 10);
+
+    await call("wechat_delete_material", { media_id: "m-1" });
+    expect(deleteMaterial).toHaveBeenCalledWith("m-1");
+  });
+
+  it("留言列表 / 回复 / 精选 / 删除", async () => {
+    vi.mocked(listComments).mockResolvedValue({ total: 0, comments: [] });
+    vi.mocked(replyComment).mockResolvedValue({ errcode: 0 });
+    vi.mocked(markComment).mockResolvedValue({ errcode: 0 });
+    vi.mocked(unmarkComment).mockResolvedValue({ errcode: 0 });
+    vi.mocked(deleteComment).mockResolvedValue({ errcode: 0 });
+
+    await call("wechat_list_comments", { msg_data_id: 1001, begin: 0, count: 20, type: 0 });
+    expect(listComments).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, begin: 0, count: 20, type: 0 });
+
+    await call("wechat_reply_comment", { msg_data_id: 1001, user_comment_id: 11, content: "谢谢" });
+    expect(replyComment).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, userCommentId: 11, content: "谢谢" });
+
+    await call("wechat_mark_comment", { msg_data_id: 1001, user_comment_id: 11 });
+    expect(markComment).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, userCommentId: 11 });
+
+    await call("wechat_unmark_comment", { msg_data_id: 1001, user_comment_id: 11 });
+    expect(unmarkComment).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, userCommentId: 11 });
+
+    await call("wechat_delete_comment", { msg_data_id: 1001, user_comment_id: 11 });
+    expect(deleteComment).toHaveBeenCalledWith({ msgDataId: 1001, index: undefined, userCommentId: 11 });
+  });
+
+  it("标签列表", async () => {
+    vi.mocked(listTags).mockResolvedValue([{ id: 1, name: "vip", count: 3 }]);
+    const { data } = resultPayload(await call("wechat_list_tags", {}));
+    expect(data).toEqual([{ id: 1, name: "vip", count: 3 }]);
+  });
+});
+
+it("调用不存在的工具返回 -32602", async () => {
+  const response = await call("wechat_nonexistent", {});
+  expect(response?.error?.code).toBe(-32602);
 });

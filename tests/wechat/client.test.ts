@@ -1,4 +1,4 @@
-import { getAccessToken, postJson, resetAccessTokenCache } from "@/lib/wechat/client";
+import { getAccessToken, getJson, postJson, resetAccessTokenCache } from "@/lib/wechat/client";
 import { WechatApiError } from "@/lib/wechat/errors";
 
 const fetchMock = vi.fn();
@@ -94,4 +94,16 @@ it("解析微信以 text/plain 返回的 JSON", async () => {
 it("缺少公众号配置时给出明确报错", async () => {
   delete process.env.WECHAT_APP_SECRET;
   await expect(getAccessToken()).rejects.toThrow(/WECHAT_APP_ID \/ WECHAT_APP_SECRET 未配置/);
+});
+
+it("getJson 用 GET 请求并返回解析结果", async () => {
+  fetchMock
+    .mockResolvedValueOnce(jsonResponse({ access_token: "token-1", expires_in: 7200 }))
+    .mockResolvedValueOnce(jsonResponse({ errcode: 0, tags: [{ id: 1, name: "vip", count: 3 }] }));
+
+  await expect(getJson("/cgi-bin/tags/get")).resolves.toMatchObject({ tags: [{ id: 1, name: "vip", count: 3 }] });
+
+  expect(fetchMock.mock.calls[1][0]).toContain("/cgi-bin/tags/get?access_token=token-1");
+  expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "GET" });
+  expect((fetchMock.mock.calls[1][1] as RequestInit).body).toBeUndefined();
 });

@@ -12,9 +12,18 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set(["2024-11-05", "2025-03-26", DEFAULT
  * MCP 的 initialize 响应里带的 instructions 会被客户端注入到模型的 system prompt，
  * 是唯一不依赖模型"自己想起来"的引导手段——图片上传必须走 Bash 这条规则就靠它。
  */
-export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信公众号。
+export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信公众号。有两种"发出去"的方式，别混用：
 
-工作流：建草稿 → （人工或直接）发布 → 查发布状态。发布后的文章公开可访问，但**不会推送给粉丝**（群发接口本服务不提供）。
+1. **发布**（wechat_publish_draft）：文章公开可访问、进入发表记录，但**不推送给粉丝**。适合常规发文，可随时用 wechat_delete_published 删除。
+2. **群发**（wechat_mass_send）：推送给粉丝，**不可逆**，且服务号每月每用户最多收到 4 条。只有运营者明确要求推送时才用。
+
+**群发必须遵守的流程**（违反会导致群发被工具层拒绝）：
+1. 先 wechat_mass_preview 把文章预览推送到运营者本人的微信（to_wxname 传运营者微信号）
+2. 停下询问用户：「预览已发到你微信，确认排版无误就群发？」
+3. 只有用户明确确认后，才允许调用 wechat_mass_send，且必须传 confirm=true 和一个本次唯一的 clientmsgid（24 小时内相同 clientmsgid 会被微信拒绝，天然防重复推送）
+4. 拿到 msg_id 后用 wechat_mass_status 轮询到 done，再向用户汇报结果
+
+**禁止**在用户未确认的情况下调用任何群发工具。群发全员（is_to_all=true）每天最多一次且进入历史消息列表；按标签群发（is_to_all=false）必须带 tag_id（先调 wechat_list_tags）。
 
 **正文格式**：wechat_create_draft 的 content 必须是 HTML，不是 Markdown——传 Markdown 进去，读者看到的就是字面的 ## 和 ** 符号。微信只认内联样式：
 - 样式写成元素上的 style="..."，class 和 <style> 标签会被微信剥掉

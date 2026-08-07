@@ -28,12 +28,20 @@ export function describeWechatError(errcode: number, errmsg: string): string {
     case 45009:
     case 45011:
       return "接口调用频率超出微信限制，请稍后再试。";
+    case 45065:
+      return "相同 clientmsgid 已存在群发记录（24 小时内防重）。这是重复提交被拦截，不是新群发；请用返回的 msg_id 调用 wechat_mass_status 查询那次群发的状态。";
+    case 40002:
+      return "群发全员触发了公众号的 API 群发保护，管理员 30 分钟内未在微信后台确认，该次群发已超时失败。";
     case 45002:
       return "内容超出微信长度限制，请缩短标题或正文。";
     case 53404:
       return "该公众号已被限制或封禁，无法调用发布相关接口。";
     case 53501:
       return "该草稿正在被其他操作占用（发布中），请稍后再试。";
+    case 88000:
+      return "公众号没有留言（评论）功能权限。留言管理接口需要账号具备留言功能，请确认公众号类型与留言功能开通状态。";
+    case 88010:
+      return "评论分页参数不合法：count 必须在 1-50 之间。";
     case 9001056:
       return "封面图不符合要求，请更换一张常规比例的 jpg/png 图片。";
     default:

@@ -78,6 +78,10 @@ export function postJson<T>(path: string, body: unknown): Promise<T> {
   }));
 }
 
+export function getJson<T>(path: string): Promise<T> {
+  return request<T>(path, () => ({ method: "GET" }));
+}
+
 export function postForm<T>(path: string, buildForm: () => FormData): Promise<T> {
   return request<T>(path, () => ({ method: "POST", body: buildForm() }));
 }

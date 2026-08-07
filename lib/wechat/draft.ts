@@ -34,6 +34,53 @@ export function updateDraft(mediaId: string, index: number, article: DraftArticl
   return postJson("/cgi-bin/draft/update", { media_id: mediaId, index, articles: toWechatArticle(article) });
 }
 
+type DraftGetResponse = {
+  media_id: string;
+  news_item?: Array<{
+    title?: string;
+    content?: string;
+    author?: string;
+    digest?: string;
+    thumb_media_id?: string;
+    content_source_url?: string;
+    update_time?: number;
+  }>;
+};
+
+export type DraftDetail = {
+  mediaId: string;
+  articles: Array<{
+    title: string;
+    content: string;
+    author?: string;
+    digest?: string;
+    thumbMediaId?: string;
+    contentSourceUrl?: string;
+    updatedAt: string;
+  }>;
+};
+
+/** 草稿详情，含正文 HTML 和封面，用于找回之前创建的草稿内容。 */
+export async function getDraft(mediaId: string): Promise<DraftDetail> {
+  const data = await postJson<DraftGetResponse>("/cgi-bin/draft/get", { media_id: mediaId });
+  return {
+    mediaId: data.media_id,
+    articles: (data.news_item ?? []).map((item) => ({
+      title: item.title ?? "",
+      content: item.content ?? "",
+      author: item.author,
+      digest: item.digest,
+      thumbMediaId: item.thumb_media_id,
+      contentSourceUrl: item.content_source_url,
+      updatedAt: item.update_time ? new Date(item.update_time * 1000).toISOString() : "",
+    })),
+  };
+}
+
+export function deleteDraft(mediaId: string): Promise<unknown> {
+  return postJson("/cgi-bin/draft/delete", { media_id: mediaId });
+}
+
 export type DraftSummary = { mediaId: string; title: string; updatedAt: string; articleCount: number };
 
 type BatchGetResponse = {
