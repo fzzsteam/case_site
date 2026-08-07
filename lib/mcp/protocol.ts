@@ -25,6 +25,8 @@ export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信�
 
 **禁止**在用户未确认的情况下调用任何群发工具。群发全员（is_to_all=true）每天最多一次且进入历史消息列表；按标签群发（is_to_all=false）必须带 tag_id（先调 wechat_list_tags）。按 OpenID 群发（wechat_mass_send_by_openids）仅认证服务号可用，认证公众号调用会返回权限错误。
 
+**多图文**：要一次发多篇（粉丝收到一条带头条+次条的消息），用 wechat_create_multi_draft 传 articles 数组（2-8 篇，每篇字段与单篇一致）；单篇用 wechat_create_draft。建好后的发布/群发流程不变。
+
 **正文格式**：wechat_create_draft 的 content 必须是 HTML，不是 Markdown——传 Markdown 进去，读者看到的就是字面的 ## 和 ** 符号。微信只认内联样式：
 - 样式写成元素上的 style="..."，class 和 <style> 标签会被微信剥掉
 - script / iframe / 表单标签会被剥离

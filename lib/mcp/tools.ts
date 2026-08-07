@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { createDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft, type DraftArticle } from "@/lib/wechat/draft";
+import { createDraft, createMultiDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft, type DraftArticle } from "@/lib/wechat/draft";
 import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
 import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
 import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
@@ -28,6 +28,11 @@ const articleShape = {
 
 const createDraftSchema = z.object(articleShape);
 const updateDraftSchema = z.object({ ...articleShape, media_id: z.string().trim().min(1), index: z.number().int().min(0).optional() });
+const createMultiDraftSchema = z
+  .object({
+    articles: z.array(z.object(articleShape)).min(2).max(8),
+  })
+  .strict();
 
 const MASS_CONFIRM_REQUIRED =
   "群发会推送给粉丝且不可逆。必须先调用 wechat_mass_preview 预览，并征得用户明确确认后，才能传 confirm=true 执行群发。";
@@ -171,6 +176,37 @@ export const TOOLS: ToolDefinition[] = [
       const { article, uploadedCount } = await buildArticle(input);
       const { media_id } = await createDraft(article);
       return { media_id, uploaded_images: uploadedCount, note: "草稿已创建，可在微信公众平台后台预览。发布需另外调用 wechat_publish_draft。" };
+    },
+  },
+  {
+    name: "wechat_create_multi_draft",
+    description:
+      "一次创建多图文草稿（2-8 篇）。多图文=一篇草稿含多篇文章，发布或群发时粉丝收到一条带头条+次条的多图文消息。每篇的标题/正文/封面处理与 wechat_create_draft 一致（正文 HTML、封面 wxmedia: 句柄或公网地址、外链图片自动转投）。单篇请用 wechat_create_draft。多图文模式下微信会忽略每篇的 digest（摘要）。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        articles: {
+          type: "array",
+          minItems: 2,
+          maxItems: 8,
+          items: { type: "object", properties: ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
+          description: "多图文文章数组，2-8 篇；每篇字段与单篇 wechat_create_draft 完全一致。",
+        },
+      },
+      required: ["articles"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const { articles } = createMultiDraftSchema.parse(args);
+      const built = await Promise.all(articles.map(buildArticle));
+      const uploadedCount = built.reduce((sum, item) => sum + item.uploadedCount, 0);
+      const { media_id } = await createMultiDraft(built.map((item) => item.article));
+      return {
+        media_id,
+        article_count: built.length,
+        uploaded_images: uploadedCount,
+        note: "多图文草稿已创建，可在微信公众平台后台预览。发布需调用 wechat_publish_draft；群发需先 wechat_mass_preview 并征得用户确认后调 wechat_mass_send。",
+      };
     },
   },
   {

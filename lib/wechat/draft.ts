@@ -26,7 +26,12 @@ function toWechatArticle(article: DraftArticle) {
 }
 
 export function createDraft(article: DraftArticle): Promise<{ media_id: string }> {
-  return postJson<{ media_id: string }>("/cgi-bin/draft/add", { articles: [toWechatArticle(article)] });
+  return createMultiDraft([article]);
+}
+
+/** 一次创建多图文草稿（2-8 篇）。发布/群发时粉丝收到一条多图文消息。 */
+export function createMultiDraft(articles: DraftArticle[]): Promise<{ media_id: string }> {
+  return postJson<{ media_id: string }>("/cgi-bin/draft/add", { articles: articles.map(toWechatArticle) });
 }
 
 /** 微信的更新是整篇替换指定 index 的文章，没有字段级 patch。 */

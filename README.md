@@ -74,6 +74,7 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 | --- | --- |
 | `wechat_create_upload_url` | 换取 10 分钟有效的图片上传地址 |
 | `wechat_create_draft` | 新建图文草稿（正文 HTML，封面必填） |
+| `wechat_create_multi_draft` | 一次新建多图文草稿（2-8 篇，粉丝收到一条多图文消息） |
 | `wechat_update_draft` | 覆盖更新已有草稿 |
 | `wechat_list_drafts` | 列出草稿，找回 media_id |
 | `wechat_get_draft` | 获取草稿详情（正文 HTML、封面） |
@@ -134,7 +135,7 @@ MCP 工具的参数由模型逐 token 生成，图片数据不可能写进参数
 ### 上线检查清单
 
 1. `GET /api/health/egress-ip` 连打 5 次，IP 恒定 → 填入公众号 IP 白名单
-2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 51 个工具
+2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 52 个工具
 3. `wechat_create_upload_url` → curl 传一张图 → 拿到 ref
 4. `wechat_create_draft` 建一篇带封面和正文图的草稿 → **去公众平台后台肉眼确认排版和图片都在**
 5. `wechat_publish_draft` → `wechat_get_publish_status` 轮询到成功 → 打开文章链接确认

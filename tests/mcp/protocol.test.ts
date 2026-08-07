@@ -1,5 +1,5 @@
 import { handleMessage, SERVER_INSTRUCTIONS, SERVER_NAME } from "@/lib/mcp/protocol";
-import { createDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft } from "@/lib/wechat/draft";
+import { createDraft, createMultiDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft } from "@/lib/wechat/draft";
 import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
 import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
 import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
@@ -15,6 +15,7 @@ import { WechatApiError } from "@/lib/wechat/errors";
 
 vi.mock("@/lib/wechat/draft", () => ({
   createDraft: vi.fn(),
+  createMultiDraft: vi.fn(),
   updateDraft: vi.fn(),
   listDrafts: vi.fn(),
   submitPublish: vi.fn(),
@@ -126,13 +127,14 @@ describe("协议握手", () => {
 });
 
 describe("tools/list", () => {
-  it("暴露约定的 51 个工具", async () => {
+  it("暴露约定的 52 个工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
     const { tools } = response?.result as { tools: Array<{ name: string; inputSchema: unknown }> };
 
     expect(tools.map((tool) => tool.name)).toEqual([
       "wechat_create_upload_url",
       "wechat_create_draft",
+      "wechat_create_multi_draft",
       "wechat_update_draft",
       "wechat_list_drafts",
       "wechat_publish_draft",
@@ -264,6 +266,56 @@ describe("wechat_create_draft", () => {
     vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-4" });
     await call("wechat_create_draft", { title: "标题", content: "<p>正文</p>", cover: "wxmedia:t" });
     expect(submitPublish).not.toHaveBeenCalled();
+  });
+});
+
+describe("多图文草稿", () => {
+  it("一次建多图文：逐篇处理封面与正文，再一次性提交", async () => {
+    vi.mocked(createMultiDraft).mockResolvedValue({ media_id: "multi-1" });
+
+    const { data } = resultPayload(
+      await call("wechat_create_multi_draft", {
+        articles: [
+          { title: "头条", content: "<p>一</p>", cover: "wxmedia:thumb-1" },
+          { title: "次条", content: "<p>二</p>", cover: "wxmedia:thumb-2" },
+        ],
+      }),
+    );
+
+    expect(data.media_id).toBe("multi-1");
+    expect(data.article_count).toBe(2);
+    const submitted = vi.mocked(createMultiDraft).mock.calls[0][0] as Array<{ title: string; thumbMediaId: string }>;
+    expect(submitted).toHaveLength(2);
+    expect(submitted[0]).toMatchObject({ title: "头条", thumbMediaId: "thumb-1" });
+    expect(submitted[1]).toMatchObject({ title: "次条", thumbMediaId: "thumb-2" });
+  });
+
+  it("多图文里封面给公网地址时各自转投微信", async () => {
+    vi.mocked(fetchRemoteImage).mockResolvedValue({ bytes: new Uint8Array([1]), fileName: "c.png", contentType: "image/png" });
+    vi.mocked(uploadThumbMaterial).mockResolvedValue("thumb-remote");
+    vi.mocked(createMultiDraft).mockResolvedValue({ media_id: "multi-2" });
+
+    await call("wechat_create_multi_draft", {
+      articles: [
+        { title: "一", content: "<p>1</p>", cover: "https://cdn.example.com/a.png" },
+        { title: "二", content: "<p>2</p>", cover: "https://cdn.example.com/b.png" },
+      ],
+    });
+
+    expect(uploadThumbMaterial).toHaveBeenCalledTimes(2);
+    const submitted = vi.mocked(createMultiDraft).mock.calls[0][0] as Array<{ thumbMediaId: string }>;
+    expect(submitted.every((article) => article.thumbMediaId === "thumb-remote")).toBe(true);
+  });
+
+  it("少于 2 篇或多于 8 篇返回参数错误", async () => {
+    const single = errorText(
+      await call("wechat_create_multi_draft", { articles: [{ title: "一", content: "<p>1</p>", cover: "wxmedia:t" }] }),
+    );
+    expect(single).toContain("参数不合法");
+
+    const many = Array.from({ length: 9 }, (_, i) => ({ title: `标题${i}`, content: "<p>x</p>", cover: "wxmedia:t" }));
+    expect(errorText(await call("wechat_create_multi_draft", { articles: many }))).toContain("参数不合法");
+    expect(createMultiDraft).not.toHaveBeenCalled();
   });
 });
 
