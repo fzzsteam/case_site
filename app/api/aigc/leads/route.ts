@@ -18,7 +18,6 @@ function fail(code: string, message: string, status = 400, cause?: unknown) {
   if (cause !== undefined) console.error(`[API] ${code}:`, cause);
   return NextResponse.json({ error: { code, message } }, { status });
 }
-
 function formatZodErrorMessage(error: ZodError, fallback = "请求参数错误") {
   const messages = error.issues.map((issue) => issue.message.trim()).filter(Boolean);
   if (messages.length === 0) return fallback;

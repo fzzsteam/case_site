@@ -18,7 +18,6 @@ export interface CreateLeadInput {
   requestIp?: string | null;
   userAgent?: string | null;
 }
-
 /**
  * 写入一条招生留资线索。窗口期内的重复提交直接复用已有记录，
  * 对调用方而言两种情况都算成功。
