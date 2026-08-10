@@ -60,7 +60,6 @@ export function Nav() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={26} height={26} />
             万象元生
-            <span className="sub">AIGC 商业实践实训</span>
           </a>
 
           <nav className="aigc-nav__links">

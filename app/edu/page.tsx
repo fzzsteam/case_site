@@ -11,7 +11,6 @@ import {
   MentorsSection,
   ModulesSection,
   PersonasSection,
-  PartnershipSection,
   SiteFooter,
   WorksSection,
 } from '@/components/aigc/sections';
@@ -24,7 +23,6 @@ export default function AigcLandingPage() {
         <Nav />
         <main>
           <Hero />
-          <PartnershipSection />
           <MarqueeStrip />
           <ModulesSection />
           <PersonasSection />

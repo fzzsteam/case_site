@@ -14,7 +14,6 @@ import {
   MENTOR_META,
   MENTORS,
   MODULES,
-  PARTNERSHIP,
   PERSONAS,
 } from './content';
 import { BADGE_ICONS, IconCheck } from './icons';
@@ -59,49 +58,6 @@ export function MarqueeStrip() {
   return <Marquee items={MARQUEE_ITEMS} />;
 }
 
-/**
- * 首屏下方的合作矮条：只声明「合作关系成立」，配双品牌标识 + 三个关键词。
- * 合作内容的展开叙述在页尾「企业实力」，此处刻意不重复。
- */
-export function PartnershipSection() {
-  return (
-    <section className="aigc-partnership" aria-label="万象元生与深圳电影制片厂产业资源合作">
-      <div className="aigc-shell">
-        <Reveal>
-          <div className="aigc-partnership__bar">
-            <div className="aigc-partnership__lockup">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="aigc-partnership__fz"
-                src={EDU_ASSETS.fangzhiLogo}
-                alt="方直科技 · 万象元生"
-              />
-              <span className="aigc-partnership__cross" aria-hidden>
-                ×
-              </span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="aigc-partnership__szfs"
-                src={EDU_ASSETS.szfsLogo}
-                alt="深圳电影制片厂有限公司"
-              />
-            </div>
-
-            <div className="aigc-partnership__copy">
-              <span className="aigc-partnership__eyebrow">{PARTNERSHIP.eyebrow}</span>
-              <div className="aigc-partnership__items">
-                {PARTNERSHIP.items.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 /* 板块一：实训体系 */
 export function ModulesSection() {
   return (
@@ -111,10 +67,10 @@ export function ModulesSection() {
           eyebrow="实训体系"
           title={
             <>
-              七大实践模块，贯通 <em>AIGC 商业创作全链路</em>
+              七大模块，覆盖 <em>AIGC 创作全流程</em>
             </>
           }
-          lede="从行业认知到综合项目闭环，每个模块都对应一段可交付的商业产出，而不是孤立的工具教学。"
+          lede="从行业认知到项目交付，每个模块都有明确产出。"
         />
 
         <div className="aigc-modules">
@@ -147,10 +103,10 @@ export function PersonasSection() {
           eyebrow="面向人群"
           title={
             <>
-              谁适合参与<em>本次商业实践实训</em>
+              适合哪些人<em>加入</em>
             </>
           }
-          lede="无论此刻的起点在哪里，实训都围绕「能拿出手的商业作品」这一条主线展开。"
+          lede="按目标选择学习路径，最终沉淀为可展示作品。"
         />
 
         <div className="aigc-grid-5">
@@ -183,7 +139,7 @@ export function GainsSection() {
           eyebrow="实践收获"
           title={
             <>
-              完成全部实践，<em>你将收获</em>
+              完成实践，<em>带走这些成果</em>
             </>
           }
         />
@@ -234,7 +190,7 @@ export function MentorsSection() {
           eyebrow="导师阵容"
           title={
             <>
-              实战派导师天团，<em>手把手带你落地</em>
+              教研导师与<em>产业导师</em>
             </>
           }
           lede={MENTOR_META.sub}
@@ -248,15 +204,19 @@ export function MentorsSection() {
           {MENTORS.map((m, i) => (
             <Reveal key={m.name} delay={i * 100}>
               <TiltCard className="aigc-mentor">
-                <div className="aigc-mentor__portrait">
-                  <span className="aigc-mentor__ring" aria-hidden />
-                  <span className="aigc-mentor__mock">{m.title}</span>
+                <div className="aigc-mentor__head">
+                  <span className="aigc-mentor__index">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="aigc-mentor__head-label">FIELD MENTOR</span>
                 </div>
                 <div className="aigc-mentor__body">
-                  <p className="aigc-mentor__name">{m.name}</p>
                   <p className="aigc-mentor__role">{m.role}</p>
+                  <p className="aigc-mentor__name">{m.name}</p>
                   <p className="aigc-mentor__skill">擅长：{m.skill}</p>
                   <p className="aigc-mentor__quote">「{m.quote}」</p>
+                </div>
+                <div className="aigc-mentor__footer">
+                  <span>REAL-WORLD METHOD</span>
+                  <i aria-hidden="true" />
                 </div>
               </TiltCard>
             </Reveal>
@@ -297,10 +257,9 @@ export function WorksSection() {
           eyebrow="学员案例"
           title={
             <>
-              <em>万象元生 × 深圳电影制片厂</em>线下实训营项目作品
+              <em>真实商业案例</em>作品
             </>
           }
-          lede="按项目分类浏览实训营产出的真实商业案例，每次只展示两行，支持翻页查看与点击放大。"
         />
         <WorksGrid />
       </div>
@@ -317,10 +276,9 @@ export function CasesSection() {
           eyebrow="就业去向"
           title={
             <>
-              学员<em>实践就业去向</em>
+              学员<em>就业去向</em>
             </>
           }
-          lede="按住卡片可左右拖动查看更多。"
         />
 
         <CaseRail />
@@ -346,7 +304,7 @@ export function CasesSection() {
               fontWeight: 900,
             }}
           >
-            AIGC 商业创作岗位图谱
+            相关创作岗位
           </h3>
         </Reveal>
 
@@ -384,76 +342,48 @@ export function EndorsementSection() {
           eyebrow="企业实力"
           title={
             <>
-              方直科技旗下<em>专注 AIGC 商业实践</em>
+              企业主体与<em>影视产业合作</em>
             </>
           }
         />
 
         <Reveal>
-          <p className="aigc-endorse__lockup-eyebrow">{ENDORSE_LOCKUP.eyebrow}</p>
           <div className="aigc-endorse__lockup">
-            <div className="aigc-endorse__party">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="aigc-endorse__party-logo"
-                src={EDU_ASSETS.fangzhiLogo}
-                alt="方直科技 · 万象元生"
-              />
-              <p className="aigc-endorse__party-name">{ENDORSE_LOCKUP.fangzhi.name}</p>
-              {ENDORSE_LOCKUP.fangzhi.meta.map((line) => (
-                <p className="aigc-endorse__party-meta" key={line}>
-                  {line}
-                </p>
-              ))}
+            <div className="aigc-endorse__party aigc-endorse__party--company">
+              <span className="aigc-endorse__party-kicker">上市公司主体</span>
+              <div className="aigc-endorse__company-logo-plate">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="aigc-endorse__company-logo"
+                  src={EDU_ASSETS.fangzhiLogo}
+                  alt={`${ENDORSE_LOCKUP.fangzhi.name}，${ENDORSE_LOCKUP.fangzhi.meta.join('，')}`}
+                />
+              </div>
             </div>
 
             <span className="aigc-endorse__divider" aria-hidden />
 
-            <div className="aigc-endorse__party">
+            <div className="aigc-endorse__party aigc-endorse__party--studio">
+              <span className="aigc-endorse__party-kicker">影视产业合作方</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                className="aigc-endorse__party-logo aigc-endorse__party-logo--szfs"
+                className="aigc-endorse__studio-logo"
                 src={EDU_ASSETS.szfsLogo}
-                alt="深圳电影制片厂有限公司"
+                alt={ENDORSE_LOCKUP.szfs.name}
               />
-              <p className="aigc-endorse__party-name">{ENDORSE_LOCKUP.szfs.name}</p>
-              {ENDORSE_LOCKUP.szfs.meta.map((line) => (
-                <p className="aigc-endorse__party-meta" key={line}>
-                  {line}
-                </p>
-              ))}
             </div>
           </div>
-          <p className="aigc-endorse__summary">{ENDORSE_LOCKUP.summary}</p>
         </Reveal>
 
-        <div className="aigc-endorse__grid">
-          <Reveal variant="left">
-            <div className="aigc-endorse__id">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="aigc-endorse__logo" src={aigcImageUrl(AIGC_MEDIA.brandFangzhiPath)} alt="方直科技" />
-              <p className="aigc-endorse__codelabel" style={{ marginTop: 22 }}>
-                股票代码
-              </p>
-              <p className="aigc-endorse__code">300235</p>
-              <p className="aigc-endorse__slogan">AIGC 商业人才培育战略级项目</p>
-              <p className="aigc-endorse__intro">
-                1993 年成立｜深交所 A 股上市教育科技企业，
-                全资子公司方直智胜负责万象元生项目运营。
-              </p>
-            </div>
-          </Reveal>
-
-          <Reveal variant="right" delay={110}>
-            <div>
-              {ENDORSE_ADVANTAGES.map((a) => (
-                <div className="aigc-adv" key={a}>
-                  <span className="aigc-adv__mark"><IconCheck size={14} /></span>
-                  <span className="aigc-adv__text">{a}</span>
-                </div>
-              ))}
-            </div>
-          </Reveal>
+        <div className="aigc-endorse__advantages">
+          {ENDORSE_ADVANTAGES.map((a, i) => (
+            <Reveal key={a} delay={i * 45}>
+              <div className="aigc-adv">
+                <span className="aigc-adv__mark"><IconCheck size={14} /></span>
+                <span className="aigc-adv__text">{a}</span>
+              </div>
+            </Reveal>
+          ))}
         </div>
 
         <div className="aigc-badges">
@@ -492,13 +422,10 @@ export function FinalCtaSection() {
       <span className="aigc-final__halo" aria-hidden />
       <div className="aigc-shell">
         <Reveal>
-          <span className="aigc-eyebrow">开启你的 AIGC 创作实践之路</span>
+          <span className="aigc-eyebrow">预约公开课</span>
           <h2 className="aigc-final__title">
-            立即预约免费公开课，<em style={{ fontStyle: 'normal', color: 'var(--acid)' }}>提前锁定实训名额</em>
+            了解课程安排，<em style={{ fontStyle: 'normal', color: 'var(--acid)' }}>提前锁定名额</em>
           </h2>
-          <p className="aigc-final__sub">
-            深入了解课程全貌，获取专属学习规划，与导师直接沟通。
-          </p>
 
           <div className="aigc-final__cta">
             <CtaButton source="kit">免费领取实训资料包</CtaButton>
@@ -508,11 +435,6 @@ export function FinalCtaSection() {
             </CtaButton>
           </div>
 
-          <p className="aigc-final__note">
-            2026 秋季实训营 · 小班教学 ｜ 名额有限，预约从速
-            <br />
-            预约公开课即赠：《AIGC 商业实训项目大纲》+ 专属学习规划 · 免费辅导
-          </p>
         </Reveal>
       </div>
     </section>

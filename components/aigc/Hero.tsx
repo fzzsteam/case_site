@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { EDU_ASSETS, HERO } from './content';
+import { HERO } from './content';
 import { CtaButton } from './LeadProvider';
 import { AIGC_MEDIA, aigcImageUrl, fetchAigcVideoUrl } from './media';
 
@@ -67,18 +67,11 @@ export function Hero() {
 
       <div className="aigc-shell">
         <div className="aigc-hero__body" ref={bodyRef}>
-          <span className="aigc-eyebrow">方直科技 300235 · AIGC 影视内容商业实践</span>
-
-          <div className="aigc-hero__brandline" aria-label={`${HERO.title} × ${HERO.partner}`}>
-            <span>{HERO.title}</span>
-            <i aria-hidden>×</i>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="aigc-hero__partner-logo"
-              src={EDU_ASSETS.szfsLogo}
-              alt={HERO.partner}
-              fetchPriority="high"
-            />
+          <div
+            className="aigc-hero__brandline"
+            aria-label={`${HERO.title} × ${HERO.partner}`}
+          >
+            <span className="aigc-hero__brand-name">{HERO.title} × {HERO.partner}</span>
           </div>
 
           <h1 className="aigc-hero__title aigc-hero__title--program">

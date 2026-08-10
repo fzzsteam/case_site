@@ -14,7 +14,7 @@ export function WorksGrid() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
-  /** 手机端改用横向滑动轨（两行一屏、手指拖动），桌面端保留上下页按钮。 */
+  /** 手机端改用横向滑动轨，桌面端恢复纵向大卡片并配合分页。 */
   const [swipe, setSwipe] = useState(false);
   const PAGE_SIZE = 8;
   const visibleWorks = category === '全部' ? WORKS : WORKS.filter((work) => work.category === category);

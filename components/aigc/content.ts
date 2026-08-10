@@ -22,20 +22,10 @@ export const HERO = {
   proof: '深影厂行业专家专题授课｜线下沉浸式集训｜商用作品集产出',
 };
 
-/**
- * 首屏下方的合作矮条：只做「合作关系成立」这一件事，
- * 展开叙述（合作内容、产业资源）统一放在页尾「企业实力」，避免两处重复。
- */
-export const PARTNERSHIP = {
-  eyebrow: '产业资源合作',
-  items: ['深影厂行业专家专题授课', '线下沉浸式集训', '商用作品集产出'],
-};
-
-/** 站内静态插画/logo，走 public 直出，不经过 OSS 签名链路。 */
+/** 站内静态插画走 public 直出，不经过 OSS 签名链路。 */
 export const EDU_ASSETS = {
+  fangzhiLogo: '/edu/fangzhilogo-crop.png',
   szfsLogo: '/edu/szfs-logo.webp',
-  szfsMark: '/edu/szfs-mark.webp',
-  fangzhiLogo: '/edu/fangzhi-logo.webp',
   gainsPortfolio: '/edu/illus/gains-portfolio.webp',
 } as const;
 
@@ -152,38 +142,30 @@ export const GAINS = [
 
 export const GAINS_PORTFOLIO = {
   eyebrow: 'PORTFOLIO',
-  title: '实力提升 · 作品集打造 · 商业变现',
+  title: '作品集 · 商业交付',
   desc: '每个模块的产出都会沉淀进同一套作品集，结业时你带走的是完整的商业交付物。',
 };
 
 export const MENTORS = [
   {
-    initial: '蔡',
-    title: '蔡老师',
     name: '蔡欣莹',
     role: '资深 AIGC 导演',
     skill: '熟悉 AI 视频全流程实战打法，主攻 AI 短剧、影视向 AI 视频成片教学',
     quote: '把完整的影视生产方法，转译成每个人都能掌握的创作流程',
   },
   {
-    initial: '陈',
-    title: '陈老师',
     name: '陈思敏',
     role: '电商商业实战导师',
     skill: '操盘多款爆款商品，拥有短剧、电商运营实战经验',
     quote: '从内容创作到商业运营，理解作品如何真正产生价值',
   },
   {
-    initial: '郑',
-    title: '郑老师',
     name: '郑泽维',
     role: 'AI 音乐创作导师',
     skill: '音乐专业背景，具备 AI 音乐创作与配音实战能力',
     quote: '让声音、画面与情绪，成为同一部作品里的完整叙事',
   },
   {
-    initial: '马',
-    title: '马老师',
     name: '马文森',
     role: 'AI 视觉创作导师',
     skill: '数媒专业出身，积累丰富 Midjourney 绘图实战经验',
@@ -193,11 +175,11 @@ export const MENTORS = [
 
 export const MENTOR_META = {
   eyebrow: '方直智胜 AIGC 教研团队',
-  sub: '万象元生全职教研团队 + 深圳电影制片厂产业导师联合授课',
-  guestTitle: '特邀产业导师｜深圳电影制片厂专业老师',
-  guestDesc: '专题客座授课方向：影视行业生产流程、真实项目案例拆解、影视行业人才标准分享',
+  sub: '全职教研团队负责日常带班，产业导师带来影视行业方法。',
+  guestTitle: '特邀产业导师｜深圳电影制片厂',
+  guestDesc: '聚焦影视生产流程、真实项目案例与行业人才标准。',
   modelTitle: '教学模式说明',
-  modelDesc: '万象元生全职教研团队全程带班，贯穿 31 天实训全周期；深圳电影制片厂专家开展多节专题产业课程。',
+  modelDesc: '教研团队贯穿 31 天实训周期，产业导师提供专题课程。',
 };
 
 export const WORKS = [
@@ -460,8 +442,7 @@ export const JOBS_DISCLAIMER =
   '薪资数据来源于 BOSS 直聘、猎聘、职友集公开招聘平台，为行业市场参考区间，不代表实训结业后实际收入保证，具体收入因个人能力、地区、岗位等因素存在差异。';
 
 export const ENDORSE_ADVANTAGES = [
-  '深交所 A 股上市公司，规范化运营与合规体系完备，全资子公司专项承载万象元生项目',
-  '与深圳电影制片厂达成产业战略合作，引入影视行业真实生产流程与人才标准',
+  '深交所 A 股上市公司，规范化运营与合规体系完备',
   '30+ 年教育科技行业深耕，深度理解人才成长轨迹与商业实训底层逻辑',
   '产学研协同共建单位：与深圳大学、河南师范大学、暨南大学等高校共建 AIGC 人才联合培养项目，落地产教融合实训机制',
   '华为鲲鹏生态核心伙伴，深度对接国产 AI 算力与多模态大模型技术底座，确保课程技术始终同步行业一线',
@@ -476,19 +457,15 @@ export const ENDORSE_BADGES = [
   { icon: 'lab', label: '广东省智能教学工程技术研究中心共建单位' },
 ] as const;
 
-/** 企业实力区双品牌并列所需的说明文案（对应改动要求第 7 条的版式）。 */
+/** 企业实力区的合作主体信息。 */
 export const ENDORSE_LOCKUP = {
-  eyebrow: '上市公司背书 × 影视产业合作资源',
   fangzhi: {
     name: '方直科技',
-    meta: ['股票代码：300235', '上市公司全资子公司｜万象元生 AIGC 商业实践项目'],
+    meta: ['股票代码：300235'],
   },
   szfs: {
     name: '深圳电影制片厂有限公司',
-    meta: ['产业战略合作单位｜SZFS'],
   },
-  summary:
-    '万象元生为方直科技（300235）全资子公司旗下品牌，现与深圳电影制片厂达成产业战略合作，共同推进 AIGC 影视内容商业实践人才培养。',
 };
 
 /** CTA 弹窗的来源标识，用于区分三个入口 */
