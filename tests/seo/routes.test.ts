@@ -13,7 +13,7 @@ it("publishes the static pages and every case detail page in the sitemap", async
     "http://localhost:3000/",
     "http://localhost:3000/cases",
     "http://localhost:3000/about",
-    "http://localhost:3000/aigc",
+    "http://localhost:3000/edu",
     "http://localhost:3000/cases/an-li-yi",
   ]);
 });
