@@ -638,51 +638,50 @@ body:has(.aigc-root) {
    -------------------------------------------------------------------------- */
 .aigc-modules {
   display: grid;
-  gap: 14px;
-  margin-top: 46px;
+  gap: 10px;
+  margin-top: 34px;
   grid-template-columns: 1fr;
 }
-@media (min-width: 640px) { .aigc-modules { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 640px) {
+  .aigc-modules { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
 @media (min-width: 1024px) {
-  .aigc-modules { grid-template-columns: repeat(6, 1fr); gap: 16px; }
-  /* 7 张卡：3 + 2 + 2 的错落布局 */
-  .aigc-modules > *:nth-child(-n + 3) { grid-column: span 2; }
-  .aigc-modules > *:nth-child(n + 4)  { grid-column: span 3; }
-  .aigc-modules > *:nth-child(7)      { grid-column: span 6; }
+  .aigc-modules { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 }
 
 .aigc-module {
-  padding: 26px 24px 28px;
-  min-height: 176px;
+  min-height: 142px;
+  padding: 18px 18px 19px;
   display: flex;
   flex-direction: column;
+  border-radius: 14px;
 }
 .aigc-module__no {
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 900;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.16em;
   color: var(--fg-3);
   transition: color 0.4s;
 }
 .aigc-module:hover .aigc-module__no { color: var(--acid); }
 .aigc-module__title {
-  margin: 12px 0 0;
-  font-size: clamp(16.5px, 2vw, 19px);
+  margin: 8px 0 0;
+  font-size: clamp(15px, 1.5vw, 17px);
   font-weight: 700;
-  line-height: 1.42;
+  line-height: 1.35;
 }
 .aigc-module__desc {
-  margin: 10px 0 0;
-  font-size: 13.5px;
+  margin: 7px 0 0;
+  font-size: 12.5px;
   color: var(--fg-2);
-  line-height: 1.75;
+  line-height: 1.6;
 }
 .aigc-module__glow {
   position: absolute;
   right: -40px;
   bottom: -40px;
-  width: 150px;
-  height: 150px;
+  width: 116px;
+  height: 116px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--holo-1), transparent 66%);
   opacity: 0;
