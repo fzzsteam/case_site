@@ -18,7 +18,6 @@ export const HERO = {
   title: '万象元生',
   sub: 'AIGC 商业实践实训',
   tagline: '从认知到商业落地，贯通 AIGC 创作全链路',
-  chips: ['七大实践模块', '真实商业项目', '个人作品集打磨', '实训结业证明'],
 };
 
 export const MARQUEE_ITEMS = [

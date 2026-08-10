@@ -90,14 +90,6 @@ export function Hero() {
               预约公开课
             </CtaButton>
           </div>
-
-          <div className="aigc-hero__chips">
-            {HERO.chips.map((c) => (
-              <span className="aigc-chip" key={c}>
-                {c}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 
