@@ -11,3 +11,10 @@ __pycache__/
 coverage/
 out/
 .vercel/
+
+# 本地 agent 工具链产物（lark skills / skill 锁文件），不进版本库
+.agents/
+.claude/
+skills-lock.json
+# 设计稿原始雪碧图，切图产物已在 public/edu/illus 下
+public/aigc/
