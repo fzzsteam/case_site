@@ -118,13 +118,6 @@ export function IconLab({ size = 26, className }: IconProps) {
   );
 }
 
-export const PERSONA_ICONS = {
-  compass: IconCompass,
-  pen: IconPen,
-  play: IconPlay,
-  spark: IconSpark,
-};
-
 export const BADGE_ICONS = {
   shield: IconShield,
   chip: IconChip,

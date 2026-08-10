@@ -16,9 +16,28 @@ export const NAV_LINKS = [
 
 export const HERO = {
   title: '万象元生',
-  sub: 'AIGC 商业实践实训',
-  tagline: '从认知到商业落地，贯通 AIGC 创作全链路',
+  partner: '深圳电影制片厂',
+  sub: '31 天线下 AIGC 影视内容商业实训营',
+  tagline: '上市公司方直科技 (300235) 全资子公司出品',
+  proof: '深影厂行业专家专题授课｜线下沉浸式集训｜商用作品集产出',
 };
+
+/**
+ * 首屏下方的合作矮条：只做「合作关系成立」这一件事，
+ * 展开叙述（合作内容、产业资源）统一放在页尾「企业实力」，避免两处重复。
+ */
+export const PARTNERSHIP = {
+  eyebrow: '产业资源合作',
+  items: ['深影厂行业专家专题授课', '线下沉浸式集训', '商用作品集产出'],
+};
+
+/** 站内静态插画/logo，走 public 直出，不经过 OSS 签名链路。 */
+export const EDU_ASSETS = {
+  szfsLogo: '/edu/szfs-logo.webp',
+  szfsMark: '/edu/szfs-mark.webp',
+  fangzhiLogo: '/edu/fangzhi-logo.webp',
+  gainsPortfolio: '/edu/illus/gains-portfolio.webp',
+} as const;
 
 export const MARQUEE_ITEMS = [
   'AI 商用图像',
@@ -40,93 +59,146 @@ export const MODULES = [
     no: '01',
     title: 'AIGC 行业认知与创作启蒙',
     desc: '读懂 AIGC 商业市场，建立岗位能力认知',
+    illus: '/edu/illus/module-01.webp',
   },
   {
     no: '02',
     title: 'AI 视觉底层美学训练',
     desc: '钻研构图、光影与色彩，夯实审美根基',
+    illus: '/edu/illus/module-02.webp',
   },
   {
     no: '03',
     title: 'AI 商用图像创作实践',
     desc: '精通提示词工程，完成商业海报、IP 形象创作',
+    illus: '/edu/illus/module-03.webp',
   },
   {
     no: '04',
     title: 'AI 短视频生成实践',
     desc: '脚本构建、数字人运用，掌握 AI 视频全流程',
+    illus: '/edu/illus/module-04.webp',
   },
   {
     no: '05',
     title: 'AIGC 电商商业实践',
     desc: '电商视觉、短视频内容产出，理解商业逻辑',
+    illus: '/edu/illus/module-05.webp',
   },
   {
     no: '06',
     title: '后期剪辑与成片输出',
     desc: 'AI 素材二次加工，输出标准化商业作品',
+    illus: '/edu/illus/module-06.webp',
   },
   {
     no: '07',
     title: '综合商业项目创作实训',
     desc: '闭环完整项目演练，打磨个人作品集',
+    illus: '/edu/illus/module-07.webp',
   },
 ];
 
 export const PERSONAS = [
   {
-    icon: 'compass',
-    title: '转型探索者',
-    desc: '期望踏入 AIGC 赛道，从零开启全新创作职业路径',
+    illus: '/edu/illus/persona-01.webp',
+    title: '在校学生',
+    desc: '用真实商业项目，打造能拿去求职的作品集',
   },
   {
-    icon: 'pen',
-    title: '创意从业者',
-    desc: '设计师、创作者，借助 AI 拓展边界，提升产出效率',
+    illus: '/edu/illus/persona-02.webp',
+    title: '影视 / 设计从业者',
+    desc: '把 AIGC 接入工作流，升级创作效率与交付能力',
   },
   {
-    icon: 'play',
-    title: '内容创作者',
-    desc: '深耕短视频，掌握 AI 赋能的图像与视频生产能力',
+    illus: '/edu/illus/persona-03.webp',
+    title: '转行求职者',
+    desc: '从零建立项目履历，找到进入 AIGC 赛道的切入口',
   },
   {
-    icon: 'spark',
-    title: '独立实践者',
-    desc: '希望拓展商业接单渠道，将创意转化为实际收益',
+    illus: '/edu/illus/persona-04.webp',
+    title: '自由创作者',
+    desc: '承接商业订单，让创意从想法变成可交付作品',
+  },
+  {
+    illus: '/edu/illus/persona-05.webp',
+    title: '副业增收人群',
+    desc: '掌握 AI 内容生产能力，拓展居家接单与增收路径',
   },
 ] as const;
 
 export const GAINS = [
-  '七大模块完整 AIGC 商用创作实战能力',
-  '经过真实商业打磨的个人作品集',
-  '万象元生实训结业证明',
-  '职业方向规划指导，商业项目对接渠道',
-  '长期创作者社群交流，持续行业信息同步',
+  {
+    title: '七大模块完整 AIGC 商用创作实战能力',
+    desc: '系统掌握从创意到交付的全链路技能，具备独立完成 AIGC 商业项目的综合能力。',
+  },
+  {
+    title: '经过真实商业打磨的个人作品集',
+    desc: '产出高质量、可展示的商业作品集，具备真实项目经验，提升职业竞争力。',
+  },
+  {
+    title: '万象元生实训结业证明',
+    desc: '获得官方认证结业证书，证明你的学习成果与实践能力。',
+  },
+  {
+    title: '职业方向规划指导，商业项目对接渠道',
+    desc: '提供职业发展建议与项目对接资源，助力你的职业进阶与商业变现。',
+  },
+  {
+    title: '长期创作者社群交流，持续行业信息同步',
+    desc: '加入创作者社群，获取最新行业动态、工具资源与合作机会，持续成长。',
+  },
 ];
+
+export const GAINS_PORTFOLIO = {
+  eyebrow: 'PORTFOLIO',
+  title: '实力提升 · 作品集打造 · 商业变现',
+  desc: '每个模块的产出都会沉淀进同一套作品集，结业时你带走的是完整的商业交付物。',
+};
 
 export const MENTORS = [
   {
+    initial: '蔡',
+    title: '蔡老师',
+    name: '蔡欣莹',
+    role: '资深 AIGC 导演',
+    skill: '熟悉 AI 视频全流程实战打法，主攻 AI 短剧、影视向 AI 视频成片教学',
+    quote: '把完整的影视生产方法，转译成每个人都能掌握的创作流程',
+  },
+  {
     initial: '陈',
-    name: '陈某某',
-    role: '前 4A 广告公司创意总监',
-    skill: 'AI 视觉合成与品牌创意落地',
-    quote: 'AI 不是替代创意，是让好创意跑得更快',
+    title: '陈老师',
+    name: '陈思敏',
+    role: '电商商业实战导师',
+    skill: '操盘多款爆款商品，拥有短剧、电商运营实战经验',
+    quote: '从内容创作到商业运营，理解作品如何真正产生价值',
   },
   {
-    initial: '李',
-    name: '李某某',
-    role: '头部 MCN 机构内容合伙人',
-    skill: 'AI 短视频全流程制作与账号变现',
-    quote: '用 AI 把短视频生产效率放大 10 倍',
+    initial: '郑',
+    title: '郑老师',
+    name: '郑泽维',
+    role: 'AI 音乐创作导师',
+    skill: '音乐专业背景，具备 AI 音乐创作与配音实战能力',
+    quote: '让声音、画面与情绪，成为同一部作品里的完整叙事',
   },
   {
-    initial: '王',
-    name: '王某某',
-    role: '资深商业插画师 / AIGC 培训专家',
-    skill: 'AI 绘画底层逻辑与商业接单指导',
-    quote: '听懂提示词的每一层含义，才算真正驾驭 AI',
+    initial: '马',
+    title: '马老师',
+    name: '马文森',
+    role: 'AI 视觉创作导师',
+    skill: '数媒专业出身，积累丰富 Midjourney 绘图实战经验',
+    quote: '掌握视觉语言，才能让 AI 按你的想象稳定出片',
   },
 ];
+
+export const MENTOR_META = {
+  eyebrow: '方直智胜 AIGC 教研团队',
+  sub: '万象元生全职教研团队 + 深圳电影制片厂产业导师联合授课',
+  guestTitle: '特邀产业导师｜深圳电影制片厂专业老师',
+  guestDesc: '专题客座授课方向：影视行业生产流程、真实项目案例拆解、影视行业人才标准分享',
+  modelTitle: '教学模式说明',
+  modelDesc: '万象元生全职教研团队全程带班，贯穿 31 天实训全周期；深圳电影制片厂专家开展多节专题产业课程。',
+};
 
 export const WORKS = [
   {
@@ -389,6 +461,7 @@ export const JOBS_DISCLAIMER =
 
 export const ENDORSE_ADVANTAGES = [
   '深交所 A 股上市公司，规范化运营与合规体系完备，全资子公司专项承载万象元生项目',
+  '与深圳电影制片厂达成产业战略合作，引入影视行业真实生产流程与人才标准',
   '30+ 年教育科技行业深耕，深度理解人才成长轨迹与商业实训底层逻辑',
   '产学研协同共建单位：与深圳大学、河南师范大学、暨南大学等高校共建 AIGC 人才联合培养项目，落地产教融合实训机制',
   '华为鲲鹏生态核心伙伴，深度对接国产 AI 算力与多模态大模型技术底座，确保课程技术始终同步行业一线',
@@ -402,6 +475,21 @@ export const ENDORSE_BADGES = [
   { icon: 'link', label: 'AIGC 产教融合共建实践基地' },
   { icon: 'lab', label: '广东省智能教学工程技术研究中心共建单位' },
 ] as const;
+
+/** 企业实力区双品牌并列所需的说明文案（对应改动要求第 7 条的版式）。 */
+export const ENDORSE_LOCKUP = {
+  eyebrow: '上市公司背书 × 影视产业合作资源',
+  fangzhi: {
+    name: '方直科技',
+    meta: ['股票代码：300235', '上市公司全资子公司｜万象元生 AIGC 商业实践项目'],
+  },
+  szfs: {
+    name: '深圳电影制片厂有限公司',
+    meta: ['产业战略合作单位｜SZFS'],
+  },
+  summary:
+    '万象元生为方直科技（300235）全资子公司旗下品牌，现与深圳电影制片厂达成产业战略合作，共同推进 AIGC 影视内容商业实践人才培养。',
+};
 
 /** CTA 弹窗的来源标识，用于区分三个入口 */
 export type LeadSource = 'kit' | 'openclass' | 'advisor';

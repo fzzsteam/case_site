@@ -2,17 +2,22 @@ import type { ReactNode } from 'react';
 import { siteConfig } from '@/content/site';
 import {
   CASE_STATS,
+  EDU_ASSETS,
   ENDORSE_ADVANTAGES,
   ENDORSE_BADGES,
+  ENDORSE_LOCKUP,
   GAINS,
+  GAINS_PORTFOLIO,
   JOBS,
   JOBS_DISCLAIMER,
   MARQUEE_ITEMS,
+  MENTOR_META,
   MENTORS,
   MODULES,
+  PARTNERSHIP,
   PERSONAS,
 } from './content';
-import { BADGE_ICONS, IconCheck, PERSONA_ICONS } from './icons';
+import { BADGE_ICONS, IconCheck } from './icons';
 import { CountUp, Marquee, Reveal, TiltCard } from './primitives';
 import { CtaButton } from './LeadProvider';
 import { WorksGrid } from './Works';
@@ -54,6 +59,49 @@ export function MarqueeStrip() {
   return <Marquee items={MARQUEE_ITEMS} />;
 }
 
+/**
+ * 首屏下方的合作矮条：只声明「合作关系成立」，配双品牌标识 + 三个关键词。
+ * 合作内容的展开叙述在页尾「企业实力」，此处刻意不重复。
+ */
+export function PartnershipSection() {
+  return (
+    <section className="aigc-partnership" aria-label="万象元生与深圳电影制片厂产业资源合作">
+      <div className="aigc-shell">
+        <Reveal>
+          <div className="aigc-partnership__bar">
+            <div className="aigc-partnership__lockup">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-partnership__fz"
+                src={EDU_ASSETS.fangzhiLogo}
+                alt="方直科技 · 万象元生"
+              />
+              <span className="aigc-partnership__cross" aria-hidden>
+                ×
+              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-partnership__szfs"
+                src={EDU_ASSETS.szfsLogo}
+                alt="深圳电影制片厂有限公司"
+              />
+            </div>
+
+            <div className="aigc-partnership__copy">
+              <span className="aigc-partnership__eyebrow">{PARTNERSHIP.eyebrow}</span>
+              <div className="aigc-partnership__items">
+                {PARTNERSHIP.items.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 /* 板块一：实训体系 */
 export function ModulesSection() {
   return (
@@ -74,6 +122,10 @@ export function ModulesSection() {
             <Reveal key={m.no} delay={i * 60}>
               <TiltCard className="aigc-module">
                 <span className="aigc-module__glow" aria-hidden />
+                <div className="aigc-module__art">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.illus} alt="" loading="lazy" aria-hidden="true" />
+                </div>
                 <span className="aigc-module__no">MODULE {m.no}</span>
                 <h3 className="aigc-module__title">{m.title}</h3>
                 <p className="aigc-module__desc">{m.desc}</p>
@@ -101,15 +153,15 @@ export function PersonasSection() {
           lede="无论此刻的起点在哪里，实训都围绕「能拿出手的商业作品」这一条主线展开。"
         />
 
-        <div className="aigc-grid-4">
+        <div className="aigc-grid-5">
           {PERSONAS.map((p, i) => {
-            const Icon = PERSONA_ICONS[p.icon];
             return (
               <Reveal key={p.title} delay={i * 80}>
                 <TiltCard className="aigc-persona">
-                  <span className="aigc-persona__icon">
-                    <Icon />
-                  </span>
+                  <div className="aigc-persona__art">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.illus} alt="" loading="lazy" aria-hidden="true" />
+                  </div>
                   <h3 className="aigc-persona__title">{p.title}</h3>
                   <p className="aigc-persona__desc">{p.desc}</p>
                 </TiltCard>
@@ -138,13 +190,16 @@ export function GainsSection() {
 
         <div className="aigc-gains">
           <Reveal variant="left">
-            <div>
+            <div className="aigc-gains__list">
               {GAINS.map((g) => (
-                <div className="aigc-gain" key={g}>
+                <div className="aigc-gain" key={g.title}>
                   <span className="aigc-gain__tick">
                     <IconCheck />
                   </span>
-                  <span className="aigc-gain__text">{g}</span>
+                  <div className="aigc-gain__body">
+                    <p className="aigc-gain__text">{g.title}</p>
+                    <p className="aigc-gain__desc">{g.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -152,30 +207,16 @@ export function GainsSection() {
 
           <Reveal variant="right" delay={120}>
             <div className="aigc-gains__visual">
-              <div className="aigc-gains__visual-inner">
-                <div>
-                  <p style={{ fontSize: 13, letterSpacing: '0.2em', color: 'var(--fg-3)' }}>
-                    PORTFOLIO
-                  </p>
-                  <p
-                    style={{
-                      marginTop: 10,
-                      fontSize: 'clamp(20px, 3.4vw, 30px)',
-                      fontWeight: 900,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    实力提升 · 作品集打造
-                    <br />
-                    商业变现
-                  </p>
-                  <p style={{ marginTop: 14, fontSize: 13.5, color: 'var(--fg-2)' }}>
-                    每个模块的产出都会沉淀进同一套作品集，
-                    <br />
-                    结业时你带走的是完整的商业交付物。
-                  </p>
-                </div>
-              </div>
+              <span className="aigc-gains__eyebrow">{GAINS_PORTFOLIO.eyebrow}</span>
+              <h3 className="aigc-gains__title">{GAINS_PORTFOLIO.title}</h3>
+              <p className="aigc-gains__desc">{GAINS_PORTFOLIO.desc}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-gains__illustration"
+                src={EDU_ASSETS.gainsPortfolio}
+                alt="AIGC 项目作品集、设计源文件、项目过程文档、成片视频与结业证书"
+                loading="lazy"
+              />
             </div>
           </Reveal>
         </div>
@@ -196,17 +237,20 @@ export function MentorsSection() {
               实战派导师天团，<em>手把手带你落地</em>
             </>
           }
-          lede="导师来自广告、MCN 与商业插画一线，带你做真实商业项目。"
+          lede={MENTOR_META.sub}
         />
 
-        <div className="aigc-grid-3">
+        <Reveal>
+          <p className="aigc-mentor-group">{MENTOR_META.eyebrow}</p>
+        </Reveal>
+
+        <div className="aigc-grid-4 aigc-mentor-grid">
           {MENTORS.map((m, i) => (
             <Reveal key={m.name} delay={i * 100}>
               <TiltCard className="aigc-mentor">
                 <div className="aigc-mentor__portrait">
-                  <span className="aigc-mentor__mock">占位形象</span>
                   <span className="aigc-mentor__ring" aria-hidden />
-                  <span className="aigc-mentor__initial">{m.initial}</span>
+                  <span className="aigc-mentor__mock">{m.title}</span>
                 </div>
                 <div className="aigc-mentor__body">
                   <p className="aigc-mentor__name">{m.name}</p>
@@ -217,6 +261,27 @@ export function MentorsSection() {
               </TiltCard>
             </Reveal>
           ))}
+        </div>
+
+        <div className="aigc-mentor-notes">
+          <Reveal variant="left">
+            <div className="aigc-mentor-note aigc-mentor-note--guest">
+              <span className="aigc-mentor-note__mark" aria-hidden>01</span>
+              <div>
+                <h3>{MENTOR_META.guestTitle}</h3>
+                <p>{MENTOR_META.guestDesc}</p>
+              </div>
+            </div>
+          </Reveal>
+          <Reveal variant="right" delay={100}>
+            <div className="aigc-mentor-note aigc-mentor-note--model">
+              <span className="aigc-mentor-note__mark" aria-hidden>02</span>
+              <div>
+                <h3>{MENTOR_META.modelTitle}</h3>
+                <p>{MENTOR_META.modelDesc}</p>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -232,10 +297,10 @@ export function WorksSection() {
           eyebrow="学员案例"
           title={
             <>
-              学员<em>商业案例集锦</em>
+              <em>万象元生 × 深圳电影制片厂</em>线下实训营项目作品
             </>
           }
-          lede="按项目分类浏览学员在实训期间产出的真实商业案例，点击可放大查看。"
+          lede="按项目分类浏览实训营产出的真实商业案例，每次只展示两行，支持翻页查看与点击放大。"
         />
         <WorksGrid />
       </div>
@@ -319,10 +384,48 @@ export function EndorsementSection() {
           eyebrow="企业实力"
           title={
             <>
-              方直科技旗下，<em>专注 AIGC 商业实践</em>
+              方直科技旗下<em>专注 AIGC 商业实践</em>
             </>
           }
         />
+
+        <Reveal>
+          <p className="aigc-endorse__lockup-eyebrow">{ENDORSE_LOCKUP.eyebrow}</p>
+          <div className="aigc-endorse__lockup">
+            <div className="aigc-endorse__party">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-endorse__party-logo"
+                src={EDU_ASSETS.fangzhiLogo}
+                alt="方直科技 · 万象元生"
+              />
+              <p className="aigc-endorse__party-name">{ENDORSE_LOCKUP.fangzhi.name}</p>
+              {ENDORSE_LOCKUP.fangzhi.meta.map((line) => (
+                <p className="aigc-endorse__party-meta" key={line}>
+                  {line}
+                </p>
+              ))}
+            </div>
+
+            <span className="aigc-endorse__divider" aria-hidden />
+
+            <div className="aigc-endorse__party">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-endorse__party-logo aigc-endorse__party-logo--szfs"
+                src={EDU_ASSETS.szfsLogo}
+                alt="深圳电影制片厂有限公司"
+              />
+              <p className="aigc-endorse__party-name">{ENDORSE_LOCKUP.szfs.name}</p>
+              {ENDORSE_LOCKUP.szfs.meta.map((line) => (
+                <p className="aigc-endorse__party-meta" key={line}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+          <p className="aigc-endorse__summary">{ENDORSE_LOCKUP.summary}</p>
+        </Reveal>
 
         <div className="aigc-endorse__grid">
           <Reveal variant="left">
@@ -345,7 +448,7 @@ export function EndorsementSection() {
             <div>
               {ENDORSE_ADVANTAGES.map((a) => (
                 <div className="aigc-adv" key={a}>
-                  <span className="aigc-adv__mark">✦</span>
+                  <span className="aigc-adv__mark"><IconCheck size={14} /></span>
                   <span className="aigc-adv__text">{a}</span>
                 </div>
               ))}

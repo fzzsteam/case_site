@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { HERO } from './content';
+import { EDU_ASSETS, HERO } from './content';
 import { CtaButton } from './LeadProvider';
 import { AIGC_MEDIA, aigcImageUrl, fetchAigcVideoUrl } from './media';
 
@@ -67,22 +67,34 @@ export function Hero() {
 
       <div className="aigc-shell">
         <div className="aigc-hero__body" ref={bodyRef}>
-          <span className="aigc-eyebrow">方直科技 300235 · 战略级 AIGC 人才培育项目</span>
+          <span className="aigc-eyebrow">方直科技 300235 · AIGC 影视内容商业实践</span>
 
-          <h1 className="aigc-hero__title">
-            {Array.from(HERO.title).map((ch, i) => (
+          <div className="aigc-hero__brandline" aria-label={`${HERO.title} × ${HERO.partner}`}>
+            <span>{HERO.title}</span>
+            <i aria-hidden>×</i>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="aigc-hero__partner-logo"
+              src={EDU_ASSETS.szfsLogo}
+              alt={HERO.partner}
+              fetchPriority="high"
+            />
+          </div>
+
+          <h1 className="aigc-hero__title aigc-hero__title--program">
+            {Array.from(HERO.sub).map((ch, i) => (
               <span
                 className="ch"
                 key={`${ch}-${i}`}
-                style={{ animationDelay: `${120 + i * 95}ms` }}
+                style={{ animationDelay: `${160 + i * 34}ms` }}
               >
                 {ch}
               </span>
             ))}
           </h1>
 
-          <p className="aigc-hero__sub">{HERO.sub}</p>
           <p className="aigc-hero__tag">{HERO.tagline}</p>
+          <p className="aigc-hero__proof">{HERO.proof}</p>
 
           <div className="aigc-hero__cta">
             <CtaButton source="kit">免费领取实训资料包</CtaButton>

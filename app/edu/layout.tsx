@@ -5,16 +5,16 @@ import "./aigc.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: "万象元生 · AIGC 商业实践实训",
+  title: "万象元生 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
   description:
-    "从认知到商业落地，贯通 AIGC 创作全链路。七大实践模块、真实商业项目实训、个人作品集打磨。方直科技（300235）全资子公司方直智胜运营。",
+    "上市公司方直科技（300235）全资子公司出品。深影厂行业专家专题授课、线下沉浸式集训、商用作品集产出——七大实践模块贯通 AIGC 商业创作全链路。",
   icons: {
     icon: aigcImageUrl(AIGC_MEDIA.mainFaviconPath),
     apple: aigcImageUrl(AIGC_MEDIA.mainFaviconPath),
   },
   openGraph: {
-    title: "万象元生 · AIGC 商业实践实训",
-    description: "从认知到商业落地，贯通 AIGC 创作全链路。",
+    title: "万象元生 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
+    description: "深影厂行业专家专题授课｜线下沉浸式集训｜商用作品集产出。",
     images: [aigcImageUrl(AIGC_MEDIA.heroPosterPath)],
   },
 };

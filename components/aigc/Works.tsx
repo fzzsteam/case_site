@@ -13,12 +13,34 @@ export function WorksGrid() {
   const [category, setCategory] = useState<WorkCategory>('全部');
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(0);
+  /** 手机端改用横向滑动轨（两行一屏、手指拖动），桌面端保留上下页按钮。 */
+  const [swipe, setSwipe] = useState(false);
+  const PAGE_SIZE = 8;
   const visibleWorks = category === '全部' ? WORKS : WORKS.filter((work) => work.category === category);
-  const current = openIndex === null ? null : visibleWorks[openIndex] ?? null;
+  const totalPages = Math.max(1, Math.ceil(visibleWorks.length / PAGE_SIZE));
+  const pageWorks = swipe ? visibleWorks : visibleWorks.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const current = openIndex === null ? null : pageWorks[openIndex] ?? null;
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 639px)');
+    const sync = () => {
+      setSwipe(media.matches);
+      setPage(0);
+      setOpenIndex(null);
+    };
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (page >= totalPages) setPage(Math.max(0, totalPages - 1));
+  }, [page, totalPages]);
 
   useEffect(() => {
     let cancelled = false;
-    const videoPaths = WORKS.filter((work) => isVideoWork(work.path)).map((work) => work.path);
+    const videoPaths = pageWorks.filter((work) => isVideoWork(work.path)).map((work) => work.path);
 
     Promise.all(
       videoPaths.map(async (path) => {
@@ -40,15 +62,15 @@ export function WorksGrid() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page, swipe, category]);
 
   useEffect(() => {
     if (openIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenIndex(null);
-      if (e.key === 'ArrowRight') setOpenIndex((i) => (i === null ? i : (i + 1) % visibleWorks.length));
+      if (e.key === 'ArrowRight') setOpenIndex((i) => (i === null ? i : (i + 1) % pageWorks.length));
       if (e.key === 'ArrowLeft')
-        setOpenIndex((i) => (i === null ? i : (i - 1 + visibleWorks.length) % visibleWorks.length));
+        setOpenIndex((i) => (i === null ? i : (i - 1 + pageWorks.length) % pageWorks.length));
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -57,7 +79,7 @@ export function WorksGrid() {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [openIndex, visibleWorks.length]);
+  }, [openIndex, pageWorks.length]);
 
   return (
     <>
@@ -74,6 +96,7 @@ export function WorksGrid() {
               key={item}
               onClick={() => {
                 setCategory(item);
+                setPage(0);
                 setOpenIndex(null);
               }}
             >
@@ -84,9 +107,14 @@ export function WorksGrid() {
         })}
       </div>
 
-      <div className="aigc-works">
-        {visibleWorks.map((w, i) => (
-          <Reveal key={w.path} variant="scale" delay={i * 70}>
+      <div
+        className={`aigc-works${swipe ? ' aigc-works--swipe' : ''}`}
+        {...(swipe
+          ? { role: 'group', 'aria-label': '学员案例，可左右滑动查看', tabIndex: 0 }
+          : {})}
+      >
+        {pageWorks.map((w, i) => (
+          <Reveal key={w.path} variant="scale" delay={swipe ? 0 : i * 70}>
             <button
               type="button"
               className="aigc-work"
@@ -102,7 +130,7 @@ export function WorksGrid() {
                     muted
                     loop
                     playsInline
-                    preload="metadata"
+                    preload={swipe ? 'none' : 'metadata'}
                     onMouseEnter={(event) => void event.currentTarget.play()}
                     onMouseLeave={(event) => {
                       event.currentTarget.pause();
@@ -133,6 +161,42 @@ export function WorksGrid() {
           </Reveal>
         ))}
       </div>
+
+      {swipe && visibleWorks.length > 4 && (
+        <p className="aigc-works-hint" aria-hidden>
+          ← 左右滑动查看全部 {visibleWorks.length} 件作品 →
+        </p>
+      )}
+
+      {!swipe && totalPages > 1 && (
+        <div className="aigc-works-pager" aria-label="学员案例翻页">
+          <button
+            type="button"
+            className="aigc-works-pager__button"
+            onClick={() => {
+              setPage((currentPage) => Math.max(0, currentPage - 1));
+              setOpenIndex(null);
+            }}
+            disabled={page === 0}
+          >
+            上一页
+          </button>
+          <span className="aigc-works-pager__status" aria-live="polite">
+            <strong>{page + 1}</strong> / {totalPages}
+          </span>
+          <button
+            type="button"
+            className="aigc-works-pager__button"
+            onClick={() => {
+              setPage((currentPage) => Math.min(totalPages - 1, currentPage + 1));
+              setOpenIndex(null);
+            }}
+            disabled={page === totalPages - 1}
+          >
+            下一页
+          </button>
+        </div>
+      )}
 
       {current && (
         <div className="aigc-lightbox" onClick={() => setOpenIndex(null)} role="dialog" aria-modal="true">

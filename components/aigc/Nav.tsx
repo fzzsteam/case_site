@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { NAV_LINKS } from './content';
 import { CtaButton } from './LeadProvider';
 import { AIGC_MEDIA, aigcImageUrl } from './media';
+import { IconClose } from './icons';
 
 export function Nav() {
   const [stuck, setStuck] = useState(false);
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState<string>('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
@@ -21,6 +23,15 @@ export function Nav() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     const sections = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(
@@ -64,10 +75,40 @@ export function Nav() {
             ))}
           </nav>
 
-          <CtaButton source="openclass" size="sm" withArrow={false}>
-            预约公开课
-          </CtaButton>
+          <div className="aigc-nav__actions">
+            <CtaButton source="openclass" size="sm" withArrow={false}>
+              预约公开课
+            </CtaButton>
+            <button
+              type="button"
+              className={`aigc-nav__menu-toggle${menuOpen ? ' is-open' : ''}`}
+              aria-expanded={menuOpen}
+              aria-controls="aigc-mobile-menu"
+              aria-label={menuOpen ? '关闭导航菜单' : '打开导航菜单'}
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              {menuOpen ? <IconClose size={19} /> : <span className="aigc-nav__menu-lines" aria-hidden />}
+            </button>
+          </div>
         </div>
+
+        <nav
+          id="aigc-mobile-menu"
+          className={`aigc-nav__mobile-menu${menuOpen ? ' is-open' : ''}`}
+          aria-label="移动端导航"
+        >
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.id}
+              className={`aigc-nav__mobile-link ${active === link.id ? 'is-active' : ''}`}
+              href={`#${link.id}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <span>{link.label}</span>
+              <span aria-hidden>↗</span>
+            </a>
+          ))}
+        </nav>
       </div>
       <i className="aigc-nav__progress" style={{ ['--p' as string]: `${progress}%` }} />
     </header>
