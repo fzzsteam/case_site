@@ -343,14 +343,17 @@ body:has(.aigc-root) {
 }
 
 .aigc-btn--ghost {
-  background: rgba(255, 255, 255, 0.035);
+  background: #10131b;
   border: 1px solid var(--line);
   color: var(--fg);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
-.aigc-btn--ghost:hover {
-  background: rgba(255, 255, 255, 0.085);
-  border-color: rgba(255, 255, 255, 0.28);
+@media (hover: hover) and (pointer: fine) {
+  .aigc-btn--ghost:hover {
+    background: #1a1e29;
+    border-color: rgba(255, 255, 255, 0.28);
+  }
 }
 
 .aigc-btn--sm { padding: 10px 19px; font-size: 13.5px; }
