@@ -447,11 +447,7 @@ export function SiteFooter() {
       <div className="aigc-shell">
         <div className="aigc-footer__row">
           <div>
-            <div className="aigc-nav__brand" style={{ marginBottom: 12 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={24} height={24} />
-              方直智胜
-            </div>
+            <div className="aigc-footer__brand">方直智胜</div>
             <p className="aigc-footer__co">
               方直智胜 © 2026 版权所有
               <br />

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { EDU_ASSETS, NAV_LINKS } from './content';
 import { CtaButton } from './LeadProvider';
-import { AIGC_MEDIA, aigcImageUrl } from './media';
 import { IconClose } from './icons';
 
 export function Nav() {
@@ -57,22 +56,17 @@ export function Nav() {
       <div className="aigc-shell">
         <div className="aigc-nav__inner">
           <a className="aigc-nav__brand aigc-nav__brand--lockup" href="#top">
-            <span className="aigc-nav__brand-main">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={26} height={26} />
-              <span>万象元生</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="aigc-nav__brand-logo aigc-nav__brand-logo--main"
+              src="/brand/logo-white.png"
+              alt="万象元生"
+            />
             <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              className="aigc-nav__partner-logo aigc-nav__partner-logo--full"
+              className="aigc-nav__partner-logo"
               src={EDU_ASSETS.szfsLogo}
-              alt="深圳电影制片厂"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="aigc-nav__partner-logo aigc-nav__partner-logo--mark"
-              src={EDU_ASSETS.szfsMark}
               alt="深圳电影制片厂"
             />
           </a>

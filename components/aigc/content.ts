@@ -25,8 +25,7 @@ export const HERO = {
 /** 站内静态插画走 public 直出，不经过 OSS 签名链路。 */
 export const EDU_ASSETS = {
   fangzhiLogo: '/edu/fangzhilogo-crop.png',
-  szfsLogo: '/edu/szfs-logo.webp',
-  szfsMark: '/edu/szfs-mark.webp',
+  szfsLogo: '/edu/szfs-horizontal-logo.png',
   gainsPortfolio: '/edu/illus/gains-portfolio.webp',
   wechatQr: '/edu/wechat-qr-3.0.jpg',
 } as const;
