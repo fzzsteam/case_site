@@ -1452,6 +1452,12 @@ body:has(.aigc-root) {
   color: var(--fg);
   animation: aigc-fade 0.28s ease both;
 }
+.aigc-modal,
+.aigc-modal *,
+.aigc-modal *::before,
+.aigc-modal *::after {
+  box-sizing: border-box;
+}
 .aigc-modal__panel {
   position: relative;
   isolation: isolate;
