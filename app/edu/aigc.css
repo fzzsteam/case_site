@@ -1461,9 +1461,8 @@ body:has(.aigc-root) {
 .aigc-modal__panel {
   position: relative;
   isolation: isolate;
-  width: min(100%, 720px);
-  max-height: min(92vh, 680px);
-  overflow-y: auto;
+  width: fit-content;
+  max-width: 100%;
   padding: 32px 32px 26px;
   border-radius: 22px;
   border: 1px solid var(--line);
@@ -1714,8 +1713,6 @@ body:has(.aigc-root) {
 @media (max-width: 639px) {
   .aigc-modal { padding: 12px; }
   .aigc-modal__panel {
-    width: min(100%, 430px);
-    max-height: calc(100svh - 24px);
     padding: 27px 18px 20px;
     border-radius: 19px;
   }
