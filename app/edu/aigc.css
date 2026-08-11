@@ -1728,8 +1728,12 @@ body:has(.aigc-root) {
   .aigc-qr { width: min(100%, 220px); }
   .aigc-modal__aside { padding: 0; }
   .aigc-modal__benefit { min-height: 41px; padding: 8px 10px; }
-  .aigc-modal__steps { margin-top: 15px; padding-top: 14px; }
-  .aigc-modal__footnote { margin-top: 15px; }
+  .aigc-modal__steps { display: none; }
+  .aigc-modal__footnote {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
 }
 .aigc-tickpop {
   width: 56px;
