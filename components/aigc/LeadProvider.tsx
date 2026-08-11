@@ -10,9 +10,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { LEAD_COPY, type LeadSource } from './content';
+import { EDU_ASSETS, LEAD_COPY, type LeadSource } from './content';
 import { IconArrow, IconCheck, IconClose } from './icons';
-import { AIGC_MEDIA, aigcImageUrl } from './media';
 
 type LeadCtx = { open: (source: LeadSource) => void };
 
@@ -143,7 +142,7 @@ function LeadModal({ source, onClose }: { source: LeadSource; onClose: () => voi
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="aigc-qr__image"
-                src={aigcImageUrl(AIGC_MEDIA.wechatQrPath)}
+                src={EDU_ASSETS.wechatQr}
                 alt="添加微信二维码"
                 width={282}
                 height={278}

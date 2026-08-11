@@ -139,7 +139,7 @@ export function GainsSection() {
           eyebrow="实践收获"
           title={
             <>
-              完成实践，<em>带走这些成果</em>
+              顺利结业，<em>尊享六大实训权益</em>
             </>
           }
         />
@@ -450,12 +450,12 @@ export function SiteFooter() {
             <div className="aigc-nav__brand" style={{ marginBottom: 12 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={24} height={24} />
-              万象元生
+              方直智胜
             </div>
             <p className="aigc-footer__co">
-              万象元生 © 2026 版权所有
+              方直智胜 © 2026 版权所有
               <br />
-              运营主体：深圳市方直智胜科技有限公司（方直科技［300235］旗下全资子公司）
+              运营主体：深圳市方直智胜科技有限公司（方直科技［300235］旗下 AI 子公司）
             </p>
           </div>
 

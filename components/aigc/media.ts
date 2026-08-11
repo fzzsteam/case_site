@@ -7,7 +7,6 @@ export const AIGC_MEDIA = {
   brandFangzhiPath: 'case-site/cases/aigc-media/brand-fangzhi.webp',
   brandPlaquesPath: 'case-site/cases/aigc-media/brand-plaques.webp',
   brandCertWallPath: 'case-site/cases/aigc-media/brand-cert-wall.webp',
-  wechatQrPath: 'case-site/cases/aigc-media/wechat-qr.png',
 } as const;
 
 export function aigcImageUrl(path: string) {

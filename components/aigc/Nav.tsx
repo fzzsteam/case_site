@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { NAV_LINKS } from './content';
+import { EDU_ASSETS, NAV_LINKS } from './content';
 import { CtaButton } from './LeadProvider';
 import { AIGC_MEDIA, aigcImageUrl } from './media';
 import { IconClose } from './icons';
@@ -56,10 +56,25 @@ export function Nav() {
     <header className={`aigc-nav ${stuck ? 'is-stuck' : ''}`}>
       <div className="aigc-shell">
         <div className="aigc-nav__inner">
-          <a className="aigc-nav__brand" href="#top">
+          <a className="aigc-nav__brand aigc-nav__brand--lockup" href="#top">
+            <span className="aigc-nav__brand-main">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={26} height={26} />
+              <span>万象元生</span>
+            </span>
+            <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={aigcImageUrl(AIGC_MEDIA.brandMarkPath)} alt="" width={26} height={26} />
-            万象元生
+            <img
+              className="aigc-nav__partner-logo aigc-nav__partner-logo--full"
+              src={EDU_ASSETS.szfsLogo}
+              alt="深圳电影制片厂"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="aigc-nav__partner-logo aigc-nav__partner-logo--mark"
+              src={EDU_ASSETS.szfsMark}
+              alt="深圳电影制片厂"
+            />
           </a>
 
           <nav className="aigc-nav__links">

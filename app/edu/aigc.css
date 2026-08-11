@@ -424,7 +424,27 @@ body:has(.aigc-root) {
   color: var(--fg);
   text-decoration: none;
 }
+.aigc-nav__brand-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.aigc-nav__brand-separator {
+  flex: 0 0 auto;
+  color: var(--fg-3);
+  font-size: 14px;
+  font-weight: 400;
+}
 .aigc-nav__brand img { width: 26px; height: 26px; }
+.aigc-nav__brand .aigc-nav__partner-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: 132px;
+  height: 28px;
+  object-fit: contain;
+}
+.aigc-nav__brand .aigc-nav__partner-logo--mark { display: none; }
 .aigc-nav__links {
   display: none;
   align-items: center;
@@ -2201,7 +2221,15 @@ body:has(.aigc-root) {
   .aigc-section { padding: 70px 0; }
   .aigc-nav__inner { height: 62px; }
   .aigc-nav__brand { gap: 7px; font-size: 15px; }
+  .aigc-nav__brand-main { gap: 7px; }
   .aigc-nav__brand img { width: 23px; height: 23px; }
+  .aigc-nav__brand-separator { font-size: 13px; }
+  .aigc-nav__brand .aigc-nav__partner-logo--full { display: none; }
+  .aigc-nav__brand .aigc-nav__partner-logo--mark {
+    display: block;
+    width: 23px;
+    height: 23px;
+  }
   .aigc-nav__actions .aigc-btn { min-height: 38px; padding: 8px 11px; font-size: 12px; }
   .aigc-nav__mobile-menu { gap: 6px; }
   .aigc-nav__mobile-link { min-height: 43px; font-size: 12px; }

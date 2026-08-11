@@ -15,7 +15,7 @@ export const NAV_LINKS = [
 ] as const;
 
 export const HERO = {
-  title: '万象元生',
+  title: '方直智胜',
   partner: '深圳电影制片厂',
   sub: '31 天线下 AIGC 影视内容商业实训营',
   tagline: '上市公司方直科技 (300235) 全资子公司出品',
@@ -26,7 +26,9 @@ export const HERO = {
 export const EDU_ASSETS = {
   fangzhiLogo: '/edu/fangzhilogo-crop.png',
   szfsLogo: '/edu/szfs-logo.webp',
+  szfsMark: '/edu/szfs-mark.webp',
   gainsPortfolio: '/edu/illus/gains-portfolio.webp',
+  wechatQr: '/edu/wechat-qr-3.0.jpg',
 } as const;
 
 export const MARQUEE_ITEMS = [
@@ -119,24 +121,28 @@ export const PERSONAS = [
 
 export const GAINS = [
   {
-    title: '七大模块完整 AIGC 商用创作实战能力',
-    desc: '系统掌握从创意到交付的全链路技能，具备独立完成 AIGC 商业项目的综合能力。',
+    title: 'AI 智能纪念玩具',
+    desc: '结业专属实物礼品，实训纪念收藏',
   },
   {
-    title: '经过真实商业打磨的个人作品集',
-    desc: '产出高质量、可展示的商业作品集，具备真实项目经验，提升职业竞争力。',
+    title: 'AIGC 商业作品集',
+    desc: '专业导师全程辅导，打造商用求职作品集',
   },
   {
-    title: '万象元生实训结业证明',
-    desc: '获得官方认证结业证书，证明你的学习成果与实践能力。',
+    title: 'AIGC 个人案例网站',
+    desc: '搭建专属线上作品展示站，拓展接单与求职渠道',
   },
   {
-    title: '职业方向规划指导，商业项目对接渠道',
-    desc: '提供职业发展建议与项目对接资源，助力你的职业进阶与商业变现。',
+    title: 'AIGC 项目结业证书',
+    desc: '方直智胜 × 深圳电影制片厂联合颁发实训结业证书',
   },
   {
-    title: '长期创作者社群交流，持续行业信息同步',
-    desc: '加入创作者社群，获取最新行业动态、工具资源与合作机会，持续成长。',
+    title: '纳入大湾区 AIGC 人才库',
+    desc: '联合广电共建大湾区 AIGC 人才库，入库存档；优先对接行业机会，定期参与 AIGC 行业沙龙交流',
+  },
+  {
+    title: '大厂负责人一对一面试指导',
+    desc: '对接行业大厂负责人，提供求职规划、简历优化等专项指导',
   },
 ];
 
