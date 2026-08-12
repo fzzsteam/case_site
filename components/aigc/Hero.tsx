@@ -3,24 +3,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { HERO } from './content';
 import { CtaButton } from './LeadProvider';
-import { AIGC_MEDIA, aigcImageUrl, fetchAigcVideoUrl } from './media';
+import { AIGC_MEDIA, aigcImageUrl } from './media';
 
 export function Hero() {
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   /** 省流量 / 降低动态偏好时只显示 poster，不加载视频 */
   const [playVideo, setPlayVideo] = useState(false);
-  const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
   useEffect(() => {
     const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (saveData || reduced) return;
     setPlayVideo(true);
-    fetchAigcVideoUrl(AIGC_MEDIA.heroVideoPath)
-      .then(setVideoSrc)
-      .catch(() => setVideoSrc(null));
   }, []);
+
+  const ensurePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    void video.play().catch(() => undefined);
+  };
 
   useEffect(() => {
     let raf = 0;
@@ -48,15 +53,17 @@ export function Hero() {
   return (
     <section className="aigc-hero" id="top">
       <div className="aigc-hero__media" ref={mediaRef}>
-        {playVideo && videoSrc ? (
+        {playVideo ? (
           <video
-            src={videoSrc}
+            ref={videoRef}
+            src="/api/aigc/hero-video"
             poster={aigcImageUrl(AIGC_MEDIA.heroPosterPath)}
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
+            onCanPlay={ensurePlayback}
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element

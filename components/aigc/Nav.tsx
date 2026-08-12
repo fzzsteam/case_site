@@ -56,12 +56,15 @@ export function Nav() {
       <div className="aigc-shell">
         <div className="aigc-nav__inner">
           <a className="aigc-nav__brand aigc-nav__brand--lockup" href="#top">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="aigc-nav__brand-logo aigc-nav__brand-logo--main"
-              src="/brand/logo-white.png"
-              alt="万象元生"
-            />
+            <span className="aigc-nav__brand-main">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="aigc-nav__brand-logo"
+                src="/edu/fangzhi-zhisheng-logo.png"
+                alt=""
+              />
+              <span>方直智胜</span>
+            </span>
             <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

@@ -5,14 +5,14 @@ import "./aigc.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: "万象元生 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
+  title: "方直智胜 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
   description: "31 天线下 AIGC 影视内容实训，从创意到交付完成真实商业作品。",
   icons: {
-    icon: aigcImageUrl(AIGC_MEDIA.mainFaviconPath),
-    apple: aigcImageUrl(AIGC_MEDIA.mainFaviconPath),
+    icon: "/edu/fangzhi-zhisheng-logo.png",
+    apple: "/edu/fangzhi-zhisheng-logo.png",
   },
   openGraph: {
-    title: "万象元生 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
+    title: "方直智胜 × 深圳电影制片厂 · 31 天线下 AIGC 影视内容商业实训营",
     description: "31 天线下 AIGC 影视内容实训，从创意到交付完成真实商业作品。",
     images: [aigcImageUrl(AIGC_MEDIA.heroPosterPath)],
   },
