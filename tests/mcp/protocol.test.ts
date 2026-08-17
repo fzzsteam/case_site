@@ -190,8 +190,10 @@ describe("tools/list", () => {
 
   it("提供群发工具", async () => {
     const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
-    const { tools } = response?.result as { tools: Array<{ name: string }> };
+    const { tools } = response?.result as { tools: Array<{ name: string; inputSchema?: { properties?: Record<string, { enum?: string[] }> } }> };
     expect(tools.some((tool) => tool.name === "wechat_mass_send")).toBe(true);
+    const massSend = tools.find((tool) => tool.name === "wechat_mass_send");
+    expect(massSend?.inputSchema?.properties?.msgtype?.enum).toContain("image");
   });
 });
 
@@ -350,7 +352,13 @@ describe("群发工具", () => {
   it("按微信号预览草稿", async () => {
     vi.mocked(massPreview).mockResolvedValue({ errcode: 0 });
     await call("wechat_mass_preview", { media_id: "draft-1", to_wxname: "operator-wx" });
-    expect(massPreview).toHaveBeenCalledWith("draft-1", { wxname: "operator-wx" });
+    expect(massPreview).toHaveBeenCalledWith({ msgtype: "mpnews", mediaId: "draft-1" }, { wxname: "operator-wx" });
+  });
+
+  it("按消息类型预览图片素材", async () => {
+    vi.mocked(massPreview).mockResolvedValue({ errcode: 0 });
+    await call("wechat_mass_preview", { msgtype: "image", media_id: "image-1", to_openid: "o-1" });
+    expect(massPreview).toHaveBeenCalledWith({ msgtype: "image", mediaId: "image-1" }, { openid: "o-1" });
   });
 
   it("预览必须指定微信号或 openid 之一", async () => {
@@ -375,7 +383,28 @@ describe("群发工具", () => {
     vi.mocked(massSendAll).mockResolvedValue({ msg_id: 1001 });
     const { data } = resultPayload(await call("wechat_mass_send", { media_id: "draft-1", clientmsgid: "send-1", confirm: true, is_to_all: true }));
     expect(data.msg_id).toBe(1001);
-    expect(massSendAll).toHaveBeenCalledWith({ mediaId: "draft-1", isToAll: true, tagId: undefined, sendIgnoreReprint: undefined, clientmsgid: "send-1" });
+    expect(massSendAll).toHaveBeenCalledWith({ message: { msgtype: "mpnews", mediaId: "draft-1" }, isToAll: true, tagId: undefined, sendIgnoreReprint: undefined, clientmsgid: "send-1" });
+  });
+
+  it("图片群发透传 image 消息体", async () => {
+    vi.mocked(massSendAll).mockResolvedValue({ msg_id: 1004 });
+    const { data } = resultPayload(
+      await call("wechat_mass_send", { msgtype: "image", media_id: "wxmedia:image-1", clientmsgid: "send-image", confirm: true, is_to_all: true }),
+    );
+    expect(data.msg_id).toBe(1004);
+    expect(massSendAll).toHaveBeenCalledWith({ message: { msgtype: "image", mediaId: "image-1" }, isToAll: true, tagId: undefined, sendIgnoreReprint: undefined, clientmsgid: "send-image" });
+  });
+
+  it("文本群发要求 content 且不要求草稿 media_id", async () => {
+    vi.mocked(massSendAll).mockResolvedValue({ msg_id: 1005 });
+    await call("wechat_mass_send", { msgtype: "text", content: "通知内容", clientmsgid: "send-text", confirm: true, is_to_all: true });
+    expect(massSendAll).toHaveBeenCalledWith({ message: { msgtype: "text", content: "通知内容" }, isToAll: true, tagId: undefined, sendIgnoreReprint: undefined, clientmsgid: "send-text" });
+  });
+
+  it("图片群发缺少 media_id 时被工具层拦截", async () => {
+    const message = errorText(await call("wechat_mass_send", { msgtype: "image", clientmsgid: "send-image", confirm: true, is_to_all: true }));
+    expect(message).toContain("media_id");
+    expect(massSendAll).not.toHaveBeenCalled();
   });
 
   it("按标签群发透传 tag_id", async () => {
@@ -394,11 +423,11 @@ describe("群发工具", () => {
     vi.mocked(massSendByOpenids).mockResolvedValue({ msg_id: 1003 });
     const { data } = resultPayload(await call("wechat_mass_send_by_openids", { media_id: "draft-1", openids: ["o-1", "o-2"], clientmsgid: "s", confirm: true }));
     expect(data.msg_id).toBe(1003);
-    expect(massSendByOpenids).toHaveBeenCalledWith("draft-1", ["o-1", "o-2"], "s");
+    expect(massSendByOpenids).toHaveBeenCalledWith({ msgtype: "mpnews", mediaId: "draft-1" }, ["o-1", "o-2"], "s");
   });
 
   it("查询群发状态与删除群发", async () => {
-    vi.mocked(getMassStatus).mockResolvedValue({ msgId: 1001, status: "SEND_SUCCESS", statusText: "发送成功", done: true, totalCount: 1, sentCount: 1, errorCount: 0 });
+    vi.mocked(getMassStatus).mockResolvedValue({ msgId: 1001, status: "SEND_SUCCESS", statusText: "发送成功", done: true, totalCount: 1, filterCount: 1, sentCount: 1, errorCount: 0, articleUrls: [] });
     vi.mocked(deleteMass).mockResolvedValue({ errcode: 0 });
 
     await call("wechat_mass_status", { msg_id: 1001 });

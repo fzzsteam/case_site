@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { createDraft, createMultiDraft, deleteDraft, getDraft, getPublishStatus, listDrafts, submitPublish, updateDraft, type DraftArticle } from "@/lib/wechat/draft";
-import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids } from "@/lib/wechat/mass";
+import { deleteMass, getMassSpeed, getMassStatus, massPreview, massSendAll, massSendByOpenids, type MassMessage } from "@/lib/wechat/mass";
 import { deletePublished, getPublishedArticle, listPublished } from "@/lib/wechat/publish";
 import { deleteMaterial, getMaterial, getMaterialCount, listMaterials } from "@/lib/wechat/material";
 import { closeComments, deleteComment, deleteCommentReply, listComments, markComment, openComments, replyComment, unmarkComment } from "@/lib/wechat/comment";
@@ -37,8 +37,98 @@ const createMultiDraftSchema = z
 const MASS_CONFIRM_REQUIRED =
   "群发会推送给粉丝且不可逆。必须先调用 wechat_mass_preview 预览，并征得用户明确确认后，才能传 confirm=true 执行群发。";
 
-const massSendSchema = z.object({
-  media_id: z.string().trim().min(1),
+const massMessageInputSchema = z.object({
+  msgtype: z.enum(["mpnews", "text", "image", "voice", "mpvideo", "wxcard", "music"]).optional(),
+  media_id: z.string().trim().min(1).optional(),
+  content: z.string().trim().min(1).optional(),
+  title: z.string().trim().optional(),
+  description: z.string().trim().optional(),
+  card_id: z.string().trim().min(1).optional(),
+  card_ext: z.string().optional(),
+  music_url: z.string().trim().url().optional(),
+  hq_music_url: z.string().trim().url().optional(),
+  thumb_media_id: z.string().trim().min(1).optional(),
+});
+
+type MassMessageInput = z.infer<typeof massMessageInputSchema>;
+
+function requiredMassField(value: string | undefined, field: string, msgtype: string): string {
+  if (!value) throw new Error(`msgtype=${msgtype} 时必须提供 ${field}。`);
+  return value;
+}
+
+function requiredMassMediaId(value: string | undefined, msgtype: string): string {
+  const mediaId = requiredMassField(value, "media_id", msgtype);
+  const normalized = mediaId.startsWith(COVER_HANDLE_PREFIX) ? mediaId.slice(COVER_HANDLE_PREFIX.length).trim() : mediaId;
+  if (!normalized) throw new Error(`msgtype=${msgtype} 时 media_id 不能为空。`);
+  return normalized;
+}
+
+function buildMassMessage(input: MassMessageInput): MassMessage {
+  const msgtype = input.msgtype ?? "mpnews";
+  switch (msgtype) {
+    case "mpnews":
+      return { msgtype, mediaId: requiredMassField(input.media_id, "media_id", msgtype) };
+    case "text":
+      return { msgtype, content: requiredMassField(input.content, "content", msgtype) };
+    case "image":
+    case "voice":
+      return { msgtype, mediaId: requiredMassMediaId(input.media_id, msgtype) };
+    case "mpvideo":
+      return {
+        msgtype,
+        mediaId: requiredMassMediaId(input.media_id, msgtype),
+        title: input.title,
+        description: input.description,
+      };
+    case "wxcard":
+      return { msgtype, cardId: requiredMassField(input.card_id, "card_id", msgtype), cardExt: input.card_ext };
+    case "music": {
+      const thumbMediaId = requiredMassField(input.thumb_media_id, "thumb_media_id", msgtype);
+      const normalizedThumbMediaId = thumbMediaId.startsWith(COVER_HANDLE_PREFIX) ? thumbMediaId.slice(COVER_HANDLE_PREFIX.length).trim() : thumbMediaId;
+      if (!normalizedThumbMediaId) throw new Error(`msgtype=${msgtype} 时 thumb_media_id 不能为空。`);
+      return {
+        msgtype,
+        title: input.title,
+        description: input.description,
+        musicUrl: requiredMassField(input.music_url, "music_url", msgtype),
+        hqMusicUrl: requiredMassField(input.hq_music_url, "hq_music_url", msgtype),
+        thumbMediaId: normalizedThumbMediaId,
+      };
+    }
+  }
+}
+
+const massMessageProperties = {
+  msgtype: {
+    type: "string",
+    enum: ["mpnews", "text", "image", "voice", "mpvideo", "wxcard", "music"],
+    default: "mpnews",
+    description: "消息类型。不传时默认为 mpnews；图片/语音/视频使用素材 media_id，文本使用 content。视频类型使用微信接口名 mpvideo。",
+  },
+  media_id: { type: "string", description: "mpnews/image/voice/mpvideo 使用的素材 media_id；图文时是草稿 media_id，其他类型可从 wechat_list_materials 获取。" },
+  content: { type: "string", description: "msgtype=text 时的文本内容。" },
+  title: { type: "string", description: "mpvideo/music 的标题，可选。" },
+  description: { type: "string", description: "mpvideo/music 的描述，可选。" },
+  card_id: { type: "string", description: "msgtype=wxcard 时的卡券 id。" },
+  card_ext: { type: "string", description: "msgtype=wxcard 时的卡券扩展参数 JSON 字符串，可选。" },
+  music_url: { type: "string", description: "msgtype=music 时的音乐地址。" },
+  hq_music_url: { type: "string", description: "msgtype=music 时的高品质音乐地址。" },
+  thumb_media_id: { type: "string", description: "msgtype=music 时的缩略图素材 media_id。" },
+} as const;
+
+const massMessageAlternatives = [
+  { required: ["media_id"], not: { required: ["msgtype"] } },
+  { required: ["msgtype", "media_id"], properties: { msgtype: { enum: ["mpnews", "image", "voice", "mpvideo"] } } },
+  { required: ["msgtype", "content"], properties: { msgtype: { const: "text" } } },
+  { required: ["msgtype", "card_id"], properties: { msgtype: { const: "wxcard" } } },
+  {
+    required: ["msgtype", "music_url", "hq_music_url", "thumb_media_id"],
+    properties: { msgtype: { const: "music" } },
+  },
+];
+
+const massSendSchema = massMessageInputSchema.extend({
   is_to_all: z.boolean().optional(),
   tag_id: z.number().int().optional(),
   clientmsgid: z.string().trim().min(1).max(32),
@@ -46,8 +136,7 @@ const massSendSchema = z.object({
   confirm: z.unknown().optional(),
 });
 
-const massSendByOpenidsSchema = z.object({
-  media_id: z.string().trim().min(1),
+const massSendByOpenidsSchema = massMessageInputSchema.extend({
   openids: z.array(z.string().trim().min(1)).min(1),
   clientmsgid: z.string().trim().min(1).max(32),
   confirm: z.unknown().optional(),
@@ -278,21 +367,23 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_mass_preview",
     description:
-      "把草稿箱里的文章预览推送到指定一人的微信（运营者本人），手机端核对排版和样式。预览不计入群发次数，按微信号预览每日限 100 次。群发前必须先预览并征得用户明确同意。",
+      "把群发消息预览推送到指定一人的微信（运营者本人），手机端核对内容。支持 mpnews（默认，使用草稿 media_id）、text、image、voice、mpvideo、wxcard、music；预览不计入群发次数，按微信号预览每日限 100 次。群发前必须先预览并征得用户明确同意。",
     inputSchema: {
       type: "object",
       properties: {
-        media_id: { type: "string", description: "草稿 media_id，从 wechat_create_draft 或 wechat_list_drafts 获取。" },
+        ...massMessageProperties,
         to_wxname: { type: "string", description: "接收预览的微信号（运营者本人），与 to_openid 二选一。" },
         to_openid: { type: "string", description: "接收预览的粉丝 openid，与 to_wxname 二选一。" },
       },
-      required: ["media_id"],
+      allOf: [
+        { anyOf: massMessageAlternatives },
+        { anyOf: [{ required: ["to_wxname"] }, { required: ["to_openid"] }] },
+      ],
       additionalProperties: false,
     },
     handler: async (args) => {
-      const input = z
-        .object({
-          media_id: z.string().trim().min(1),
+      const input = massMessageInputSchema
+        .extend({
           to_wxname: z.string().trim().min(1).optional(),
           to_openid: z.string().trim().min(1).optional(),
         })
@@ -300,36 +391,41 @@ export const TOOLS: ToolDefinition[] = [
           message: "必须且只能提供 to_wxname（运营者微信号）或 to_openid 之一",
         })
         .parse(args);
-      await massPreview(input.media_id, input.to_wxname ? { wxname: input.to_wxname } : { openid: input.to_openid });
-      return { note: "预览已发送到指定微信，请对方在手机上确认排版无误后，再执行群发（wechat_mass_send 需要 confirm=true）。" };
+      await massPreview(buildMassMessage(input), input.to_wxname ? { wxname: input.to_wxname } : { openid: input.to_openid });
+      return { note: "预览已发送到指定微信，请对方在手机上确认内容无误后，再执行群发（wechat_mass_send 需要 confirm=true）。" };
     },
   },
   {
     name: "wechat_mass_send",
     description:
-      "把草稿箱里的文章群发给粉丝（全员或某个标签）。会推送给粉丝、不可逆。频次限制：认证公众号每天可群发 1 次（全员或按标签）；服务号每月每用户最多收到 4 条。必须先 wechat_mass_preview 预览并征得用户明确同意，且必须传 confirm=true 和 clientmsgid（24 小时内相同 clientmsgid 会被微信拒绝，防止重复推送）。",
+      "把消息群发给粉丝（全员或某个标签）。支持 mpnews（默认，media_id 为草稿）、text、image、voice、mpvideo、wxcard、music。会推送给粉丝、不可逆；必须先用相同消息调用 wechat_mass_preview，并征得用户明确同意后传 confirm=true 和 clientmsgid。",
     inputSchema: {
       type: "object",
       properties: {
-        media_id: { type: "string", description: "草稿 media_id。" },
+        ...massMessageProperties,
         is_to_all: { type: "boolean", description: "true=群发全员；false=按标签群发（默认 false）。群发全员会进入历史消息列表，且每天最多一次。" },
         tag_id: { type: "number", description: "is_to_all=false 时必填，标签 id 可从 wechat_list_tags 获取。" },
         clientmsgid: { type: "string", description: "自定义群发 id，最长 32 字节，24 小时内相同值会被微信拒绝（防重复推送）。建议用本次操作的唯一标识。" },
-        send_ignore_reprint: { type: "number", enum: [0, 1], description: "文章被判定为转载时是否继续群发：0=停止（默认），1=继续。" },
+        send_ignore_reprint: { type: "number", enum: [0, 1], description: "仅 mpnews 有效：文章被判定为转载时是否继续群发。0=停止（默认），1=继续。" },
         confirm: { type: "boolean", description: "必须为 true 才执行。群发不可逆，必须在用户明确同意后传 true。" },
       },
-      required: ["media_id", "clientmsgid", "confirm"],
+      required: ["clientmsgid", "confirm"],
+      anyOf: massMessageAlternatives,
       additionalProperties: false,
     },
     handler: async (args) => {
       const input = massSendSchema.parse(args);
       if (input.confirm !== true) throw new Error(MASS_CONFIRM_REQUIRED);
+      const message = buildMassMessage(input);
+      if (input.send_ignore_reprint !== undefined && message.msgtype !== "mpnews") {
+        throw new Error("send_ignore_reprint 仅适用于 mpnews 图文消息。");
+      }
       const isToAll = input.is_to_all ?? false;
       if (!isToAll && input.tag_id === undefined) {
         throw new Error("is_to_all=false 时必须提供 tag_id（可用 wechat_list_tags 查看标签）；要群发全员请显式传 is_to_all=true。");
       }
       const result = await massSendAll({
-        mediaId: input.media_id,
+        message,
         isToAll,
         tagId: input.tag_id,
         sendIgnoreReprint: input.send_ignore_reprint,
@@ -341,22 +437,23 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_mass_send_by_openids",
     description:
-      "按指定 OpenID 列表群发文章（仅认证服务号可用，认证公众号/订阅号调用会返回接口权限错误；不进入历史消息列表）。同样不可逆：必须先预览并征得用户明确同意，传 confirm=true 和 clientmsgid。",
+      "按指定 OpenID 列表群发消息（仅认证服务号可用，不进入历史消息列表）。支持 mpnews（默认，media_id 为草稿）、text、image、voice、mpvideo、wxcard、music。同样不可逆：必须先用相同消息预览并征得用户明确同意，传 confirm=true 和 clientmsgid。",
     inputSchema: {
       type: "object",
       properties: {
-        media_id: { type: "string", description: "草稿 media_id。" },
+        ...massMessageProperties,
         openids: { type: "array", items: { type: "string" }, description: "接收群发的粉丝 openid 列表。" },
         clientmsgid: { type: "string", description: "自定义群发 id，防重复推送。" },
         confirm: { type: "boolean", description: "必须为 true 才执行。" },
       },
-      required: ["media_id", "openids", "clientmsgid", "confirm"],
+      required: ["openids", "clientmsgid", "confirm"],
+      anyOf: massMessageAlternatives,
       additionalProperties: false,
     },
     handler: async (args) => {
       const input = massSendByOpenidsSchema.parse(args);
       if (input.confirm !== true) throw new Error(MASS_CONFIRM_REQUIRED);
-      const result = await massSendByOpenids(input.media_id, input.openids, input.clientmsgid);
+      const result = await massSendByOpenids(buildMassMessage(input), input.openids, input.clientmsgid);
       return { ...result, note: "群发任务已提交，用 wechat_mass_status 轮询结果。" };
     },
   },

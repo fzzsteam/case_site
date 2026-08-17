@@ -15,7 +15,7 @@
    - 指令约束：`SERVER_INSTRUCTIONS` 写明群发工作流——必须先 `wechat_mass_preview` 预览、必须征得用户明确同意后才能传 `confirm=true`。
    - 平台侧：建议在公众号后台「设置-安全中心-风险操作保护」开启 API 群发保护，群发全员时管理员需在微信后台确认，30 分钟未确认则失败（errcode 40001/40002）。
 2. **预览机制**：`message/mass/preview` 把文章（草稿 `media_id`）真推送给指定一人，支持 `touser`（openid）或 `towxname`（微信号）二选一；按微信号预览每日限 100 次；预览不计入每月 4 条群发配额。工具参数用 `to_wxname` / `to_openid` 二选一显式区分。
-3. **群发直接用草稿 media_id**：官方明确群发/预览的 `mpnews.media_id` 用「草稿箱/新建草稿」返回的 media_id，因此现有 `wechat_create_draft` 的返回值可直接打通群发，无需新增素材上传链路。
+3. **群发按消息类型组装消息体**：`mpnews` 的 `media_id` 使用「草稿箱/新建草稿」返回值；`image`、`voice`、`mpvideo` 使用素材 `media_id`；`text`、`wxcard`、`music` 使用各自消息体字段。未传 `msgtype` 时兼容旧行为，默认 `mpnews`。
 4. **GET 支持**：`tags/get` 是 GET 接口，`lib/wechat/client.ts` 需把 `request` 泛化出 GET 能力（新增 `getJson`），现有 `postJson` 不动。
 5. **留言的 msg_data_id 来源**：群发返回的 `msg_data_id`，或 `freepublish/submit` 返回的 `msg_data_id`（现有 `submitPublish` 已透传该字段）。
 
@@ -25,10 +25,10 @@
 
 | 工具 | 参数 | 微信接口 | 响应要点 |
 | --- | --- | --- | --- |
-| `wechat_mass_preview` | `media_id`、`to_wxname` 或 `to_openid`（二选一） | `POST /cgi-bin/message/mass/preview` | 预览已发送提示 |
-| `wechat_mass_send` | `media_id`、`is_to_all`（默认 false）、`tag_id`（false 时必填）、**`confirm`（必须 true）**、**`clientmsgid`**、`send_ignore_reprint`（默认 0） | `POST /cgi-bin/message/mass/sendall` | `msg_id`、`msg_data_id`、频率提示（服务号每月每用户 4 条、每天全员 1 次） |
-| `wechat_mass_send_by_openids` | `media_id`、`openids`（数组）、**`confirm`（必须 true）**、**`clientmsgid`** | `POST /cgi-bin/message/mass/send` | `msg_id`、`msg_data_id` |
-| `wechat_mass_status` | `msg_id` | `POST /cgi-bin/message/mass/get` | `msg_status`（SENDING/SEND_SUCCESS/失败）、`totalcount`/`sentcount`/`errorcount`、`article_url` |
+| `wechat_mass_preview` | `msgtype`（默认 `mpnews`）及对应消息字段、`to_wxname` 或 `to_openid`（二选一） | `POST /cgi-bin/message/mass/preview` | 预览已发送提示 |
+| `wechat_mass_send` | `msgtype`（默认 `mpnews`）及对应消息字段、`is_to_all`（默认 false）、`tag_id`（false 时必填）、**`confirm`（必须 true）**、**`clientmsgid`**、`send_ignore_reprint`（仅 mpnews） | `POST /cgi-bin/message/mass/sendall` | `msg_id`、`msg_data_id`、频率提示（服务号每月每用户 4 条、每天全员 1 次） |
+| `wechat_mass_send_by_openids` | `msgtype`（默认 `mpnews`）及对应消息字段、`openids`（数组）、**`confirm`（必须 true）**、**`clientmsgid`** | `POST /cgi-bin/message/mass/send` | `msg_id`、`msg_data_id` |
+| `wechat_mass_status` | `msg_id` | `POST /cgi-bin/message/mass/get` | `msg_status`（SENDING/SEND_SUCCESS/失败）、`totalcount`/`filtercount`/`sentcount`/`errorcount`、`article_url` |
 | `wechat_mass_delete` | `msg_id`、`article_idx`（可选，多图文删单篇） | `POST /cgi-bin/message/mass/delete` | 删除结果（仅文章/视频可删） |
 
 ### 草稿箱补全（扩展 `lib/wechat/draft.ts`）
@@ -81,11 +81,11 @@
 ## 数据流（群发全流程）
 
 ```
-wechat_create_draft（已有）→ 拿 media_id
-→ wechat_mass_preview(media_id, to_wxname=运营者微信号)
+wechat_create_draft（mpnews）或素材 media_id（image/voice/mpvideo）
+→ wechat_mass_preview（传与群发相同的消息类型和字段，to_wxname=运营者微信号）
 → agent 停下询问用户「预览已发到你微信，确认无误就群发？」
 → 用户明确同意
-→ wechat_mass_send(media_id, confirm=true, clientmsgid=..., is_to_all/tag_id)
+→ wechat_mass_send（传与预览相同的消息类型和字段，confirm=true, clientmsgid=..., is_to_all/tag_id）
 → 返回 msg_id → wechat_mass_status 轮询到完成 → 汇报
 ```
 

@@ -15,15 +15,17 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set(["2024-11-05", "2025-03-26", DEFAULT
 export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信公众号。有两种"发出去"的方式，别混用：
 
 1. **发布**（wechat_publish_draft）：文章公开可访问、进入发表记录，但**不推送给粉丝**。适合常规发文，可随时用 wechat_delete_published 删除。
-2. **群发**（wechat_mass_send）：推送给粉丝，**不可逆**。频次限制：认证公众号每天可群发 1 次，服务号每月每用户最多收到 4 条。只有运营者明确要求推送时才用。
+2. **群发**（wechat_mass_send）：推送给粉丝，**不可逆**。支持 mpnews（图文，默认）、text、image、voice、mpvideo、wxcard、music。频次限制：认证公众号每天可群发 1 次，服务号每月每用户最多收到 4 条。只有运营者明确要求推送时才用。
 
 **群发必须遵守的流程**（违反会导致群发被工具层拒绝）：
-1. 先 wechat_mass_preview 把文章预览推送到运营者本人的微信（to_wxname 传运营者微信号）
+1. 先用与群发完全相同的消息参数调用 wechat_mass_preview，把消息预览推送到运营者本人的微信（to_wxname 传运营者微信号）
 2. 停下询问用户：「预览已发到你微信，确认排版无误就群发？」
 3. 只有用户明确确认后，才允许调用 wechat_mass_send，且必须传 confirm=true 和一个本次唯一的 clientmsgid（24 小时内相同 clientmsgid 会被微信拒绝，天然防重复推送）
 4. 拿到 msg_id 后用 wechat_mass_status 轮询到 done，再向用户汇报结果
 
 **禁止**在用户未确认的情况下调用任何群发工具。群发全员（is_to_all=true）每天最多一次且进入历史消息列表；按标签群发（is_to_all=false）必须带 tag_id（先调 wechat_list_tags）。按 OpenID 群发（wechat_mass_send_by_openids）仅认证服务号可用，认证公众号调用会返回权限错误。
+
+**消息参数**：mpnews 使用 wechat_create_draft / wechat_create_multi_draft 返回的草稿 media_id；image、voice、mpvideo 使用素材 media_id（可从 wechat_list_materials 获取）；text 使用 content；wxcard 使用 card_id/card_ext；music 使用 music_url、hq_music_url、thumb_media_id。image/voice/mpvideo/wxcard/music 不需要创建图文草稿。
 
 **多图文**：要一次发多篇（粉丝收到一条带头条+次条的消息），用 wechat_create_multi_draft 传 articles 数组（2-8 篇，每篇字段与单篇一致）；单篇用 wechat_create_draft。建好后的发布/群发流程不变。
 
@@ -32,10 +34,10 @@ export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信�
 - script / iframe / 表单标签会被剥离
 - 正文里的外链 <a> 在公众号内不可点击，需要外链请用 content_source_url（阅读原文）
 
-**图片必须走 Bash 上传，不能作为工具参数传输**（图片数据无法由模型生成）。三步：
+**本地图片必须走 Bash 上传，不能作为工具参数传输**（图片数据无法由模型生成）。三步：
 1. 调 wechat_create_upload_url，purpose 传 "cover"（封面）或 "content"（正文图）
 2. 用 Bash 执行返回的 curl_example，把本地图片文件传上去，响应形如 {"ref":"..."}
-3. 封面把 ref（wxmedia:xxx）传给 cover 参数；正文图把 ref（图片地址）填进 <img src>
+3. 封面把 ref（wxmedia:xxx）传给 cover 参数；如果要群发图片，可把同一个 ref 传给 wechat_mass_preview / wechat_mass_send 的 media_id（工具会自动去掉 wxmedia: 前缀）；正文图把 ref（图片地址）填进 <img src>
 
 封面是微信的必填项，没有封面建不了草稿。如果图片本来就有公网地址，也可以直接把地址填给 cover 或 <img src>，服务端会代为转投微信。`;
 

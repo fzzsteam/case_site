@@ -84,9 +84,9 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 | `wechat_list_published` | 列出已发布文章 |
 | `wechat_delete_published` | 删除已发布文章（**不可逆**） |
 | `wechat_get_published_article` | 获取已发布图文详情 |
-| `wechat_mass_preview` | 把文章预览推送到指定微信（运营者核对排版，不计群发次数） |
-| `wechat_mass_send` | 群发给粉丝（全员或按标签，**不可逆**，必须 confirm=true + clientmsgid） |
-| `wechat_mass_send_by_openids` | 按 OpenID 列表群发（仅认证服务号） |
+| `wechat_mass_preview` | 把群发消息预览推送到指定微信（支持图文/文本/图片/语音/视频/卡券/音乐，不计群发次数） |
+| `wechat_mass_send` | 群发消息给粉丝（全员或按标签，**不可逆**，必须 confirm=true + clientmsgid） |
+| `wechat_mass_send_by_openids` | 按 OpenID 列表群发消息（仅认证服务号） |
 | `wechat_mass_status` | 查询群发发送状态 |
 | `wechat_mass_delete` | 删除已群发消息 |
 | `wechat_list_materials` | 分类型列出永久素材 |
@@ -121,6 +121,8 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 - 群发全员（`is_to_all=true`）每天最多一次并进入历史消息列表；按标签群发必须带 `tag_id`；
 - 频次限制：认证公众号每天可群发 1 次（全员或按标签）；服务号每月每用户最多收到 4 条。按 OpenID 群发（`wechat_mass_send_by_openids`）仅认证服务号可用；
 - 建议在公众号后台「设置-安全中心-风险操作保护」开启 **API 群发保护**，群发全员时管理员需在微信后台确认，30 分钟未确认自动失败。
+
+群发消息类型由 `msgtype` 区分：不传时兼容旧行为，按 `mpnews` 使用草稿 `media_id`；`text` 使用 `content`；`image` / `voice` / `mpvideo` 使用素材 `media_id`；`wxcard` 使用 `card_id`/`card_ext`；`music` 使用 `music_url`、`hq_music_url` 和 `thumb_media_id`。图片素材可以通过 `wechat_create_upload_url(purpose="cover")` 上传，返回的 `wxmedia:xxx` ref 可直接传给图片预览/群发工具。
 
 所有接口均要求账号通过微信认证；个人主体或未认证账号自 2025 年 7 月起会被回收发布类接口权限。
 
