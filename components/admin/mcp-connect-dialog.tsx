@@ -28,7 +28,7 @@ function buildGuides(endpoint: string, token: string): Guide[] {
       key: "claude-code",
       label: "Claude Code",
       audience: "命令行版 Claude Code",
-      hint: "执行后在 Claude Code 里输入 /mcp，看到 wechat 且工具数为 6 就算接上了。",
+      hint: "执行后在 Claude Code 里输入 /mcp，看到 wechat 且工具数为 52 就算接上了。",
       blocks: [{ code: `claude mcp add --transport http wechat ${endpoint} \\\n  --header "Authorization: ${auth}"` }],
     },
     {

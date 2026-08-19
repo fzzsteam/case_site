@@ -106,27 +106,16 @@ const massMessageProperties = {
     default: "mpnews",
     description: "消息类型。不传时默认为 mpnews；图片/语音/视频使用素材 media_id，文本使用 content。视频类型使用微信接口名 mpvideo。",
   },
-  media_id: { type: "string", description: "mpnews/image/voice/mpvideo 使用的素材 media_id；图文时是草稿 media_id，其他类型可从 wechat_list_materials 获取。" },
-  content: { type: "string", description: "msgtype=text 时的文本内容。" },
+  media_id: { type: "string", description: "msgtype=mpnews/image/voice/mpvideo 时必填；图文时是草稿 media_id，其他类型可从 wechat_list_materials 获取。" },
+  content: { type: "string", description: "msgtype=text 时必填的文本内容。" },
   title: { type: "string", description: "mpvideo/music 的标题，可选。" },
   description: { type: "string", description: "mpvideo/music 的描述，可选。" },
-  card_id: { type: "string", description: "msgtype=wxcard 时的卡券 id。" },
+  card_id: { type: "string", description: "msgtype=wxcard 时必填的卡券 id。" },
   card_ext: { type: "string", description: "msgtype=wxcard 时的卡券扩展参数 JSON 字符串，可选。" },
-  music_url: { type: "string", description: "msgtype=music 时的音乐地址。" },
-  hq_music_url: { type: "string", description: "msgtype=music 时的高品质音乐地址。" },
-  thumb_media_id: { type: "string", description: "msgtype=music 时的缩略图素材 media_id。" },
+  music_url: { type: "string", description: "msgtype=music 时必填的音乐地址。" },
+  hq_music_url: { type: "string", description: "msgtype=music 时必填的高品质音乐地址。" },
+  thumb_media_id: { type: "string", description: "msgtype=music 时必填的缩略图素材 media_id。" },
 } as const;
-
-const massMessageAlternatives = [
-  { required: ["media_id"], not: { required: ["msgtype"] } },
-  { required: ["msgtype", "media_id"], properties: { msgtype: { enum: ["mpnews", "image", "voice", "mpvideo"] } } },
-  { required: ["msgtype", "content"], properties: { msgtype: { const: "text" } } },
-  { required: ["msgtype", "card_id"], properties: { msgtype: { const: "wxcard" } } },
-  {
-    required: ["msgtype", "music_url", "hq_music_url", "thumb_media_id"],
-    properties: { msgtype: { const: "music" } },
-  },
-];
 
 const massSendSchema = massMessageInputSchema.extend({
   is_to_all: z.boolean().optional(),
@@ -337,7 +326,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_publish_draft",
     description:
-      "发布草稿箱里的一篇文章。发布后文章公开可访问、出现在公众号的发表记录里，但不会推送给粉丝（推送是另一套群发接口，本服务不提供）。发布是异步的，返回 publish_id 后用 wechat_get_publish_status 查结果。",
+      "发布草稿箱里的一篇文章。发布后文章公开可访问、出现在公众号的发表记录里，但不会推送给粉丝（推送请使用 wechat_mass_preview → 用户确认 → wechat_mass_send）。发布是异步的，返回 publish_id 后用 wechat_get_publish_status 查结果。",
     inputSchema: {
       type: "object",
       properties: { media_id: { type: "string", description: "要发布的草稿 media_id。" } },
@@ -375,10 +364,6 @@ export const TOOLS: ToolDefinition[] = [
         to_wxname: { type: "string", description: "接收预览的微信号（运营者本人），与 to_openid 二选一。" },
         to_openid: { type: "string", description: "接收预览的粉丝 openid，与 to_wxname 二选一。" },
       },
-      allOf: [
-        { anyOf: massMessageAlternatives },
-        { anyOf: [{ required: ["to_wxname"] }, { required: ["to_openid"] }] },
-      ],
       additionalProperties: false,
     },
     handler: async (args) => {
@@ -403,14 +388,13 @@ export const TOOLS: ToolDefinition[] = [
       type: "object",
       properties: {
         ...massMessageProperties,
-        is_to_all: { type: "boolean", description: "true=群发全员；false=按标签群发（默认 false）。群发全员会进入历史消息列表，且每天最多一次。" },
+        is_to_all: { type: "boolean", description: "必须显式传 true 或 false：true=群发全员；false=按标签群发。群发全员会进入历史消息列表，且每天最多一次。" },
         tag_id: { type: "number", description: "is_to_all=false 时必填，标签 id 可从 wechat_list_tags 获取。" },
         clientmsgid: { type: "string", description: "自定义群发 id，最长 32 字节，24 小时内相同值会被微信拒绝（防重复推送）。建议用本次操作的唯一标识。" },
         send_ignore_reprint: { type: "number", enum: [0, 1], description: "仅 mpnews 有效：文章被判定为转载时是否继续群发。0=停止（默认），1=继续。" },
         confirm: { type: "boolean", description: "必须为 true 才执行。群发不可逆，必须在用户明确同意后传 true。" },
       },
-      required: ["clientmsgid", "confirm"],
-      anyOf: massMessageAlternatives,
+      required: ["clientmsgid", "confirm", "is_to_all"],
       additionalProperties: false,
     },
     handler: async (args) => {
@@ -447,7 +431,6 @@ export const TOOLS: ToolDefinition[] = [
         confirm: { type: "boolean", description: "必须为 true 才执行。" },
       },
       required: ["openids", "clientmsgid", "confirm"],
-      anyOf: massMessageAlternatives,
       additionalProperties: false,
     },
     handler: async (args) => {

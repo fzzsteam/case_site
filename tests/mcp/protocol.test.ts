@@ -195,6 +195,25 @@ describe("tools/list", () => {
     const massSend = tools.find((tool) => tool.name === "wechat_mass_send");
     expect(massSend?.inputSchema?.properties?.msgtype?.enum).toContain("image");
   });
+
+  it("群发工具向兼容性较弱的客户端暴露平面 JSON Schema", async () => {
+    const response = await handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" }, context);
+    const { tools } = response?.result as {
+      tools: Array<{
+        name: string;
+        inputSchema?: { allOf?: unknown; anyOf?: unknown; required?: string[] };
+      }>;
+    };
+
+    for (const name of ["wechat_mass_preview", "wechat_mass_send", "wechat_mass_send_by_openids"]) {
+      const tool = tools.find((item) => item.name === name);
+      expect(tool?.inputSchema?.allOf).toBeUndefined();
+      expect(tool?.inputSchema?.anyOf).toBeUndefined();
+    }
+
+    const massSend = tools.find((tool) => tool.name === "wechat_mass_send");
+    expect(massSend?.inputSchema?.required).toEqual(expect.arrayContaining(["clientmsgid", "confirm", "is_to_all"]));
+  });
 });
 
 describe("wechat_create_upload_url", () => {
@@ -349,6 +368,40 @@ describe("草稿与发布", () => {
 });
 
 describe("群发工具", () => {
+  it("兼容模型把 arguments 编码成 JSON 字符串", async () => {
+    const message = errorText(
+      await call(
+        "wechat_mass_send",
+        JSON.stringify({ media_id: "draft-1", clientmsgid: "send-json", confirm: false, is_to_all: true }),
+      ),
+    );
+
+    expect(message).toContain("确认");
+    expect(message).not.toContain("Expected object");
+  });
+
+  it.each(["arguments", "input"] as const)("兼容单层 %s wrapper，并忽略可选字段的 null/空字符串", async (wrapper) => {
+    const message = errorText(
+      await call("wechat_mass_send", {
+        [wrapper]: {
+          msgtype: "",
+          media_id: "draft-1",
+          title: "",
+          description: "",
+          tag_id: null,
+          send_ignore_reprint: null,
+          clientmsgid: `send-${wrapper}`,
+          confirm: false,
+          is_to_all: true,
+        },
+      }),
+    );
+
+    expect(message).toContain("确认");
+    expect(message).not.toContain("Expected");
+    expect(message).not.toContain("参数不合法");
+  });
+
   it("按微信号预览草稿", async () => {
     vi.mocked(massPreview).mockResolvedValue({ errcode: 0 });
     await call("wechat_mass_preview", { media_id: "draft-1", to_wxname: "operator-wx" });

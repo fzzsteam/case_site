@@ -27,6 +27,8 @@ export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信�
 
 **消息参数**：mpnews 使用 wechat_create_draft / wechat_create_multi_draft 返回的草稿 media_id；image、voice、mpvideo 使用素材 media_id（可从 wechat_list_materials 获取）；text 使用 content；wxcard 使用 card_id/card_ext；music 使用 music_url、hq_music_url、thumb_media_id。image/voice/mpvideo/wxcard/music 不需要创建图文草稿。
 
+**工具调用格式**：每次 tools/call 的 arguments 都应是扁平 JSON 对象，字段直接放在对象顶层；不要额外包 input/arguments，也不要为未填写的可选字段传 null 或空字符串。
+
 **多图文**：要一次发多篇（粉丝收到一条带头条+次条的消息），用 wechat_create_multi_draft 传 articles 数组（2-8 篇，每篇字段与单篇一致）；单篇用 wechat_create_draft。建好后的发布/群发流程不变。
 
 **正文格式**：wechat_create_draft 的 content 必须是 HTML，不是 Markdown——传 Markdown 进去，读者看到的就是字面的 ## 和 ** 符号。微信只认内联样式：
@@ -74,6 +76,43 @@ function describeToolFailure(error: unknown): string {
   return "工具执行失败";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() === "";
+}
+
+function parseEncodedToolArguments(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  if (isBlankString(value)) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new Error("工具 arguments 必须是 JSON 对象；收到的字符串不是合法 JSON。");
+  }
+}
+
+/** 兼容常见模型适配器：arguments 可能被编码成字符串或包了一层 input/arguments。 */
+function normalizeToolArguments(raw: unknown): unknown {
+  let value = parseEncodedToolArguments(raw);
+  if (value === null || value === undefined || isBlankString(value)) return {};
+
+  if (isRecord(value)) {
+    const keys = Object.keys(value);
+    if (keys.length === 1 && (keys[0] === "arguments" || keys[0] === "input")) {
+      value = parseEncodedToolArguments(value[keys[0]]);
+      if (value === null || value === undefined || isBlankString(value)) return {};
+    }
+  }
+
+  if (!isRecord(value)) return value;
+
+  // LLM 经常为未填写的可选字段输出 null/""。只处理工具参数的第一层，避免改写业务对象内部的数据。
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null && !isBlankString(item)));
+}
+
 /**
  * 处理单条 JSON-RPC 消息。返回 null 表示这是通知（没有 id），HTTP 层应答 202 空响应。
  */
@@ -114,7 +153,7 @@ export async function handleMessage(message: unknown, context: { origin: string 
 
       const startedAt = Date.now();
       try {
-        const result = await tool.handler(call.data.arguments ?? {}, context);
+        const result = await tool.handler(normalizeToolArguments(call.data.arguments), context);
         console.log(`[mcp] ${tool.name} ok ${Date.now() - startedAt}ms`);
         return ok(responseId, { content: [{ type: "text", text: JSON.stringify(result, null, 2) }], isError: false });
       } catch (error) {
