@@ -470,7 +470,7 @@ body:has(.aigc-root) {
   align-items: center;
   gap: 4px;
 }
-@media (min-width: 1100px) {
+@media (min-width: 1360px) {
   .aigc-nav__links { display: flex; }
 }
 .aigc-nav__link {
@@ -2201,7 +2201,7 @@ body:has(.aigc-root) {
   margin-top: 4px;
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1359px) {
   .aigc-nav__menu-toggle { display: grid; }
   .aigc-nav__mobile-menu {
     display: grid;
@@ -2242,7 +2242,7 @@ body:has(.aigc-root) {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1360px) {
   .aigc-nav__mobile-menu { display: none !important; }
   .aigc-mentor-grid--team { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -2846,8 +2846,7 @@ body:has(.aigc-root) {
   font-size: 9px;
   letter-spacing: 0.13em;
 }
-.aigc-talent-card__type,
-.aigc-talent-work__type {
+.aigc-talent-card__type {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -3046,15 +3045,21 @@ body:has(.aigc-root) {
 .aigc-talent-about__line { display: block; width: 52px; height: 2px; margin-top: 25px; border-radius: 99px; background: var(--acid); box-shadow: 0 0 14px rgba(59, 240, 122, 0.65); }
 .aigc-talent-about__caption { display: block; margin-top: 13px; color: var(--fg-3); font-size: 11px; }
 .aigc-talent-profile-works { padding-top: 42px; }
-.aigc-talent-profile-works__heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; }
-.aigc-talent-profile-works__note { display: grid; min-width: 130px; gap: 3px; padding: 13px 16px; border-left: 2px solid var(--acid); background: rgba(255, 255, 255, 0.025); }
-.aigc-talent-profile-works__note strong { font-size: 34px; line-height: 1; }
-.aigc-talent-profile-works__note small { color: var(--fg-3); font-size: 11px; }
+.aigc-talent-profile-works__heading { display: block; }
 .aigc-talent-works-grid { margin-top: 37px; }
 .aigc-talent-work-link { display: block; color: inherit; text-decoration: none; }
 .aigc-talent-work-button { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: zoom-in; }
 .aigc-talent-work { width: 100%; }
-.aigc-talent-work__type { top: 11px; left: 11px; }
+.aigc-talent-work .aigc-work__cat { font-size: 14px; }
+.aigc-talent-work .aigc-work__by { overflow: visible; }
+.aigc-talent-work .aigc-work__tag {
+  flex: 0 0 auto;
+  max-width: none;
+  overflow: visible;
+  padding: 4px 9px;
+  font-size: 11px;
+  text-overflow: clip;
+}
 .aigc-talent-work__placeholder {
   display: grid;
   width: 100%;
@@ -3075,7 +3080,38 @@ body:has(.aigc-root) {
 .aigc-talent-lightbox__gallery .aigc-lightbox__img { width: auto; max-width: min(100%, 520px); max-height: 36vh; }
 .aigc-talent-lightbox__gallery.is-single { max-height: 76vh; overflow: visible; }
 .aigc-talent-lightbox__gallery.is-single .aigc-lightbox__img { max-width: min(92vw, 900px); max-height: 76vh; }
+.aigc-talent-lightbox__video-grid {
+  display: grid;
+  width: 100%;
+  max-height: 76vh;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.aigc-talent-lightbox__video-grid.is-single { display: flex; justify-content: center; overflow: visible; }
+.aigc-talent-lightbox__video-card { position: relative; min-width: 0; }
+.aigc-talent-lightbox__video-card .aigc-lightbox__video { width: 100%; max-height: 34vh; }
+.aigc-talent-lightbox__video-grid.is-single .aigc-talent-lightbox__video-card { width: min(100%, 1100px); }
+.aigc-talent-lightbox__video-index {
+  display: block;
+  margin-top: 6px;
+  color: var(--fg-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+.aigc-talent-lightbox__video-loading {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  border: 1px dashed var(--line);
+  color: var(--fg-3);
+  font-size: 12px;
+}
 .aigc-talent-lightbox .aigc-lightbox__video { width: min(92vw, 1100px); max-height: 76vh; }
+.aigc-talent-lightbox__video-grid .aigc-talent-lightbox__video-card .aigc-lightbox__video { width: 100%; }
 .aigc-talent-lightbox__empty { display: grid; min-height: 220px; place-items: center; padding: 40px; border: 1px dashed var(--line); color: var(--fg-3); }
 .aigc-talent-lightbox__caption { width: min(100%, 840px); margin-top: 13px; text-align: center; }
 .aigc-talent-lightbox__caption span { color: var(--acid-hi); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; letter-spacing: 0.1em; }
@@ -3133,22 +3169,22 @@ body:has(.aigc-root) {
   .aigc-talent-about__card p { margin-top: 17px; font-size: 13px; line-height: 1.8; }
   .aigc-talent-about__line { margin-top: 19px; }
   .aigc-talent-profile-works { padding-top: 10px; }
-  .aigc-talent-profile-works__heading { align-items: flex-start; flex-direction: column; gap: 18px; }
-  .aigc-talent-profile-works__note { min-width: 100%; padding: 10px 13px; }
-  .aigc-talent-profile-works__note strong { font-size: 28px; }
   .aigc-talent-works-grid { margin-top: 23px; }
-  .aigc-talent-work__type { top: 8px; left: 8px; padding: 4px 6px; font-size: 8px; }
+  .aigc-talent-work .aigc-work__cat { font-size: 12px; }
+  .aigc-talent-work .aigc-work__tag { padding: 3px 7px; font-size: 10px; }
   .aigc-talent-lightbox { padding: 45px 12px 32px; }
   .aigc-talent-lightbox__gallery { gap: 7px; max-height: 71vh; }
   .aigc-talent-lightbox__gallery .aigc-lightbox__img { max-width: calc(50% - 4px); max-height: 30vh; }
   .aigc-talent-lightbox__gallery.is-single .aigc-lightbox__img { max-width: 94vw; max-height: 70vh; }
+  .aigc-talent-lightbox__video-grid { grid-template-columns: 1fr; max-height: 71vh; gap: 7px; }
+  .aigc-talent-lightbox__video-card .aigc-lightbox__video { max-height: 52vh; }
   .aigc-talent-lightbox .aigc-lightbox__video { width: 94vw; max-height: 70vh; }
+  .aigc-talent-lightbox__video-grid .aigc-talent-lightbox__video-card .aigc-lightbox__video { width: 100%; }
   .aigc-talent-lightbox__caption strong { font-size: 13px; }
   .aigc-talent-lightbox__caption p { display: none; }
 }
 
-/* 顶栏切换：课程页滚过 Hero 后，课程索引进入中部，模块入口始终靠右。 */
-.aigc-nav__course-links { display: none; }
+/* 实训页课程目录：仅在移动端折叠菜单中展示。 */
 .aigc-nav__mobile-course {
   grid-column: 1 / -1;
   display: grid;
@@ -3182,53 +3218,11 @@ body:has(.aigc-root) {
 .aigc-nav__mobile-course a.is-active,
 .aigc-nav__mobile-course a:hover { border-color: rgba(59, 240, 122, 0.35); color: var(--acid-hi); }
 
-@media (min-width: 1100px) {
+@media (min-width: 1360px) {
   .aigc-nav__links.aigc-nav__links--modules {
     display: flex;
     flex: 0 0 auto;
     margin-left: auto;
-  }
-  .aigc-nav__course-links {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    max-width: 0;
-    flex: 0 1 auto;
-    gap: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-3px);
-    transition: max-width 0.38s ease, opacity 0.28s ease, transform 0.38s ease, margin 0.38s ease;
-  }
-  .aigc-nav__course-links.is-visible {
-    max-width: 620px;
-    margin-left: clamp(12px, 2vw, 24px);
-    opacity: 1;
-    transform: none;
-  }
-  .aigc-nav__course-link {
-    position: relative;
-    flex: 0 0 auto;
-    padding: 8px 7px;
-    border-radius: 8px;
-    color: var(--fg-3);
-    font-size: 11px;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: color 0.22s, background 0.22s;
-  }
-  .aigc-nav__course-link:hover,
-  .aigc-nav__course-link.is-active { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
-  .aigc-nav__course-link.is-active::after {
-    content: '';
-    position: absolute;
-    right: 7px;
-    bottom: 2px;
-    left: 7px;
-    height: 2px;
-    border-radius: 999px;
-    background: var(--acid);
-    box-shadow: 0 0 10px var(--acid);
   }
   .aigc-nav__links--modules .aigc-nav__link { padding-right: 10px; padding-left: 10px; }
 }

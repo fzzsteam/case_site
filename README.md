@@ -37,6 +37,8 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 当前样例站点保存在 `public/portfolio/site-k7m3x9p/`，用于本地预览。生产部署静态源码时，将构建后的文件（根目录必须有 `index.html`）上传到私有 OSS 的 `portfolio-sites/<siteSlug>/` 前缀，并设置 `PORTFOLIO_STORAGE=oss`。应用会通过同一个 `siteSlug.edu.fzzsai.com` 代理读取 HTML、CSS、JS、图片和视频，浏览器不会直接拿到 OSS 地址；视频请求会透传 Range，支持拖动播放。上传入口和人才数据后台暂未开放，当前后台只提供只读人才列表。
 
+人才资料由 `lib/talent/demo-data.ts` 作为幂等种子写入 `talent_profiles` 和 `talent_works`，应用启动时会自动执行数据迁移。本批人才作品的头像、封面和视频均使用私有 OSS 的 `case-site/cases/aigc-talent/` 对象路径；封面通过同源代理读取，视频在点击播放后生成临时签名地址。
+
 ## 案例管理后台
 
 首次连接一个空的 MySQL 数据库时，应用启动会自动建表、写入默认分类与内置的 11 个案例（`lib/cases/seed-data.ts`），并生成一个随机初始密码（存储为哈希，不落明文）。初始密码会显示在 `/admin/login` 页面上，登录后请在「账号设置」里尽快修改；修改过一次后，登录页就不会再展示初始密码。

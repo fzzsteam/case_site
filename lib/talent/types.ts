@@ -10,6 +10,7 @@ export type TalentWork = {
   summary: string;
   coverPath?: string;
   mediaPath?: string;
+  mediaPaths?: string[];
   galleryPaths?: string[];
   siteSlug?: string;
   siteUrl?: string;

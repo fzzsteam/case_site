@@ -76,7 +76,48 @@ export const aigcLeads = mysqlTable("aigc_leads", {
   index("idx_aigc_leads_created_at").on(table.createdAt),
 ]);
 
+// EDU 人才集市。作品媒体保存在 OSS，数据库只保存稳定的对象路径和展示元数据。
+export const talentProfiles = mysqlTable("talent_profiles", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  role: varchar("role", { length: 255 }).notNull(),
+  intro: text("intro").notNull(),
+  bio: text("bio").notNull(),
+  avatarPath: varchar("avatar_path", { length: 500 }),
+  location: varchar("location", { length: 100 }),
+  skills: text("skills").notNull(),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+});
+
+export const talentWorks = mysqlTable("talent_works", {
+  id: varchar("id", { length: 100 }).primaryKey(),
+  talentId: varchar("talent_id", { length: 64 }).notNull().references(() => talentProfiles.id, { onDelete: "cascade" }),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  type: mysqlEnum("type", ["video", "image", "website"]).notNull(),
+  source: mysqlEnum("source", ["uploaded", "static", "external"]).notNull(),
+  summary: text("summary").notNull(),
+  coverPath: varchar("cover_path", { length: 500 }).notNull(),
+  mediaPath: varchar("media_path", { length: 500 }),
+  mediaPaths: text("media_paths"),
+  galleryPaths: text("gallery_paths"),
+  siteSlug: varchar("site_slug", { length: 255 }),
+  siteUrl: varchar("site_url", { length: 1000 }),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => [
+  index("idx_talent_works_talent_id").on(table.talentId),
+  index("idx_talent_works_sort_order").on(table.talentId, table.sortOrder),
+]);
+
 export const casesRelations = relations(cases, ({ many }) => ({ episodes: many(caseEpisodes) }));
 export const caseEpisodesRelations = relations(caseEpisodes, ({ one }) => ({
   case: one(cases, { fields: [caseEpisodes.caseId], references: [cases.id] }),
+}));
+export const talentProfilesRelations = relations(talentProfiles, ({ many }) => ({ works: many(talentWorks) }));
+export const talentWorksRelations = relations(talentWorks, ({ one }) => ({
+  talent: one(talentProfiles, { fields: [talentWorks.talentId], references: [talentProfiles.id] }),
 }));

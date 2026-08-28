@@ -67,21 +67,6 @@ export function Nav() {
               />
             </a>
 
-            {isTrainingPage && (
-              <nav className={`aigc-nav__course-links ${showCourseDirectory ? 'is-visible' : ''}`} aria-label="实训课程目录">
-                {NAV_LINKS.map((link) => (
-                  <a
-                    key={link.id}
-                    className={`aigc-nav__course-link ${activeCourse === link.id ? 'is-active' : ''}`}
-                    href={`#${link.id}`}
-                    aria-current={activeCourse === link.id ? 'location' : undefined}
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </nav>
-            )}
-
             <nav className="aigc-nav__links aigc-nav__links--modules" aria-label="全局模块导航">
               {MODULE_LINKS.map((link) => (
                 <a
@@ -145,11 +130,12 @@ export function Nav() {
         </div>
         <i className="aigc-nav__progress" style={{ ['--p' as string]: `${progress}%` }} />
       </header>
+
     </>
   );
 }
 
-/** 实训页专属目录状态：滚过 Hero 后切换到顶栏中部。 */
+/** 实训页专属目录状态：离开 Hero 后在移动端菜单中显示课程索引。 */
 function useCourseDirectory(enabled: boolean) {
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState<string>('');
@@ -162,7 +148,7 @@ function useCourseDirectory(enabled: boolean) {
 
     const hero = document.getElementById('top');
     const updateVisibility = () => {
-      const threshold = hero ? hero.getBoundingClientRect().bottom <= 82 : window.scrollY > 80;
+      const threshold = hero ? hero.getBoundingClientRect().bottom <= 0 : window.scrollY > 80;
       setVisible(threshold);
     };
     updateVisibility();

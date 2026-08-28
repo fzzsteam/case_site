@@ -6,7 +6,8 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DEMO_TALENTS, getStaticSiteUrl } from "@/lib/talent/demo-data";
+import { aigcImageUrl } from "@/components/aigc/media";
+import { getStaticSiteUrl } from "@/lib/talent/presentation";
 import { TALENT_SKILLS, TALENT_WORK_TYPES, type TalentProfile, type TalentWork } from "@/lib/talent/types";
 import { cn } from "@/lib/utils";
 
@@ -23,20 +24,20 @@ function siteHref(work: TalentWork, localStaticPreview: boolean) {
   return work.siteUrl ?? (work.siteSlug ? getStaticSiteUrl(work.siteSlug) : "#");
 }
 
-export function TalentReadonlyList({ localStaticPreview = false }: { localStaticPreview?: boolean }) {
+export function TalentReadonlyList({ talents, localStaticPreview = false }: { talents: TalentProfile[]; localStaticPreview?: boolean }) {
   const [query, setQuery] = useState("");
   const [skill, setSkill] = useState("全部");
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return DEMO_TALENTS.filter((talent) => {
+    return talents.filter((talent) => {
       const matchesQuery = !normalized || `${talent.name} ${talent.role} ${talent.intro} ${talent.works.map((work) => `${work.title} ${work.summary}`).join(" ")}`.toLowerCase().includes(normalized);
       return matchesQuery && (skill === "全部" || talent.skills.includes(skill));
     });
-  }, [query, skill]);
+  }, [query, skill, talents]);
 
-  const works = DEMO_TALENTS.reduce((sum, talent) => sum + talent.works.length, 0);
-  const sites = DEMO_TALENTS.reduce((sum, talent) => sum + talent.works.filter((work) => work.type === "website").length, 0);
+  const works = talents.reduce((sum, talent) => sum + talent.works.length, 0);
+  const sites = talents.reduce((sum, talent) => sum + talent.works.filter((work) => work.type === "website").length, 0);
 
   return (
     <div className="space-y-6">
@@ -50,7 +51,7 @@ export function TalentReadonlyList({ localStaticPreview = false }: { localStatic
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard icon={<Users size={17} />} label="人才" value={DEMO_TALENTS.length} />
+        <StatCard icon={<Users size={17} />} label="人才" value={talents.length} />
         <StatCard icon={<FileImage size={17} />} label="作品" value={works} />
         <StatCard icon={<Globe2 size={17} />} label="作品集站点" value={sites} />
       </div>
@@ -105,7 +106,7 @@ function TalentRow({ talent, localStaticPreview }: { talent: TalentProfile; loca
       <TableCell className="min-w-48">
         <div className="flex items-center gap-3">
           <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-900 to-emerald-600 text-sm font-semibold text-white">
-            {talent.avatarPath ? <img src={talent.avatarPath} alt="" className="size-full object-cover" /> : talent.name.slice(0, 1)}
+            {talent.avatarPath ? <img src={aigcImageUrl(talent.avatarPath)} alt="" className="size-full object-cover" /> : talent.name.slice(0, 1)}
           </div>
           <div className="min-w-0"><p className="truncate font-medium text-foreground">{talent.name}</p><p className="truncate text-xs text-muted-foreground">{talent.role}</p></div>
         </div>

@@ -10,6 +10,8 @@ export async function register() {
     await seedIfEmpty();
     const { backfillCaseSlugsAndDetails } = await import("@/lib/cases/backfill");
     await backfillCaseSlugsAndDetails();
+    const { migrateTalentData } = await import("@/lib/talent/seed");
+    await migrateTalentData();
     const { ensureAdminCredentials } = await import("@/lib/auth/credentials");
     await ensureAdminCredentials();
   } catch (error) {

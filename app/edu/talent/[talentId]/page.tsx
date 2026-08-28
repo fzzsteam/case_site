@@ -2,24 +2,23 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, BriefcaseBusiness, MapPin } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { aigcImageUrl } from '@/components/aigc/media';
 import { EduShell } from '@/components/aigc/EduShell';
 import { Reveal } from '@/components/aigc/primitives';
 import { TalentWorksGrid } from '@/components/talent/talent-works-grid';
-import { DEMO_TALENTS, getDemoTalent } from '@/lib/talent/demo-data';
+import { getTalentProfile } from '@/lib/talent/queries';
 
-export function generateStaticParams() {
-  return DEMO_TALENTS.map((talent) => ({ talentId: talent.id }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ talentId: string }> }): Promise<Metadata> {
   const { talentId } = await params;
-  const talent = getDemoTalent(talentId);
+  const talent = await getTalentProfile(talentId);
   return talent ? { title: `${talent.name} · 人才作品集`, description: talent.intro } : {};
 }
 
 export default async function TalentDetailPage({ params }: { params: Promise<{ talentId: string }> }) {
   const { talentId } = await params;
-  const talent = getDemoTalent(talentId);
+  const talent = await getTalentProfile(talentId);
   if (!talent) notFound();
 
   return (
@@ -36,7 +35,7 @@ export default async function TalentDetailPage({ params }: { params: Promise<{ t
               <Reveal variant="scale" className="aigc-talent-profile__avatar">
                 {talent.avatarPath ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={talent.avatarPath} alt={`${talent.name}头像`} />
+                  <img src={aigcImageUrl(talent.avatarPath)} alt={`${talent.name}头像`} />
                 ) : (
                   <span aria-hidden="true">{talent.name.slice(0, 1)}</span>
                 )}
@@ -79,14 +78,9 @@ export default async function TalentDetailPage({ params }: { params: Promise<{ t
           <div className="aigc-shell">
             <div className="aigc-talent-profile-works__heading">
               <Reveal>
-                <span className="aigc-eyebrow">SELECTED WORKS / 02</span>
+                <span className="aigc-eyebrow">SELECTED WORKS / {String(talent.works.length).padStart(2, '0')}</span>
                 <h2 id="talent-works-title" className="aigc-h2">案例<em>作品</em></h2>
                 <p className="aigc-lede">视频、图片与网站作品，按案例记录创作能力。</p>
-              </Reveal>
-              <Reveal variant="right" className="aigc-talent-profile-works__note">
-                <span>OPEN PORTFOLIO</span>
-                <strong>{String(talent.works.length).padStart(2, '0')}</strong>
-                <small>已收录案例</small>
               </Reveal>
             </div>
             <TalentWorksGrid talent={talent} />

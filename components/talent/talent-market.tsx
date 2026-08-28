@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, FileImage, Globe2, Play, Search, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { aigcImageUrl } from '@/components/aigc/media';
 import { Reveal } from '@/components/aigc/primitives';
 import type { TalentProfile, TalentWork, TalentWorkType } from '@/lib/talent/types';
 import { TALENT_SKILLS, TALENT_WORK_TYPES } from '@/lib/talent/types';
@@ -48,7 +49,7 @@ function TalentCard({ talent }: { talent: TalentProfile }) {
         <div className="aigc-talent-card__visual">
           {featured?.coverPath ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={featured.coverPath} alt={`${talent.name}的代表作品`} loading="lazy" />
+            <img src={aigcImageUrl(featured.coverPath)} alt={`${talent.name}的代表作品`} loading="lazy" />
           ) : (
             <div className="aigc-talent-card__placeholder" aria-hidden="true">
               <span>{talent.name.slice(0, 1)}</span>

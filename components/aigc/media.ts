@@ -10,6 +10,7 @@ export const AIGC_MEDIA = {
 } as const;
 
 export function aigcImageUrl(path: string) {
+  if (path.startsWith("/") || path.startsWith("http://") || path.startsWith("https://")) return path;
   return `/api/media/image/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
