@@ -12,12 +12,6 @@ function WorkIcon({ type, size = 14 }: { type: TalentWork['type']; size?: number
   return <Globe2 size={size} aria-hidden="true" />;
 }
 
-function sourceLabel(work: TalentWork) {
-  if (work.source === 'static') return '源码部署';
-  if (work.source === 'external') return '外链访问';
-  return '已上传';
-}
-
 function siteHref(work: TalentWork, localStaticPreview: boolean) {
   if (work.source === 'static' && work.siteSlug && localStaticPreview) return `/portfolio-preview/${work.siteSlug}/`;
   return work.siteUrl ?? (work.siteSlug ? getStaticSiteUrl(work.siteSlug) : '#');
@@ -46,7 +40,6 @@ function WorkVisual({ work, talent }: { work: TalentWork; talent: TalentProfile 
       <div className="aigc-work__meta">
         <span className="aigc-work__cat">{work.title}</span>
         <span className="aigc-work__by">
-          <span className="aigc-work__tag aigc-talent-work__source">{sourceLabel(work)}</span>
           <span className="aigc-work__author">{talent.name}</span>
         </span>
       </div>
@@ -149,7 +142,7 @@ function TalentWorkLightbox({
           <div className="aigc-talent-lightbox__empty">暂无可预览的作品文件</div>
         )}
         <div className="aigc-talent-lightbox__caption">
-          <span>{getWorkTypeLabel(work.type)} / {sourceLabel(work)}</span>
+          <span>{getWorkTypeLabel(work.type)}</span>
           <strong>{work.title}</strong>
           <p>{work.summary}</p>
         </div>
