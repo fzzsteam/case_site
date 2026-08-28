@@ -25,6 +25,7 @@ export const HERO = {
 /** 站内静态插画走 public 直出，不经过 OSS 签名链路。 */
 export const EDU_ASSETS = {
   fangzhiLogo: '/edu/fangzhilogo-crop.png',
+  fangzhiLockup: '/edu/fangzhi-zhisheng-lockup.png',
   szfsLogo: '/edu/szfs-horizontal-logo.png',
   gainsPortfolio: '/edu/illus/gains-portfolio.webp',
   wechatQr: '/edu/wechat-qr-3.0.jpg',
@@ -151,37 +152,94 @@ export const GAINS_PORTFOLIO = {
   desc: '每个模块的产出都会沉淀进同一套作品集，结业时你带走的是完整的商业交付物。',
 };
 
-export const MENTORS = [
+export type MentorProfile = {
+  name: string;
+  role: string;
+  bio: readonly string[];
+};
+
+export const MENTORS: MentorProfile[] = [
   {
     name: '蔡欣莹',
-    role: '资深 AIGC 导演',
-    skill: '熟悉 AI 视频全流程实战打法，主攻 AI 短剧、影视向 AI 视频成片教学',
-    quote: '把完整的影视生产方法，转译成每个人都能掌握的创作流程',
+    role: 'AIGC 影像导师',
+    bio: [
+      '深耕 AI 影像全流程创作，精通 AI 短剧与成片全流程制作。',
+      '将专业片场实操经验，梳理为创作者可直接落地的标准化工作流。',
+    ],
   },
   {
     name: '陈思敏',
-    role: '电商商业实战导师',
-    skill: '操盘多款爆款商品，拥有短剧、电商运营实战经验',
-    quote: '从内容创作到商业运营，理解作品如何真正产生价值',
+    role: '电商内容导师',
+    bio: [
+      '拥有多品类爆款内容操盘经验，熟悉内容创意、流量获取至店铺转化的完整链路。',
+      '助力创作者将内容能力转化为可持续的商业收益。',
+    ],
   },
   {
     name: '郑泽维',
-    role: 'AI 音乐创作导师',
-    skill: '音乐专业背景，具备 AI 音乐创作与配音实战能力',
-    quote: '让声音、画面与情绪，成为同一部作品里的完整叙事',
+    role: 'AI 音频导师',
+    bio: [
+      '音乐科班背景，专注 AI 配乐与配音实战应用。',
+      '依托专业听觉体系把控 AI 声音输出品质，以音乐素养构筑 AI 时代声音竞争力。',
+    ],
   },
   {
     name: '马文森',
-    role: 'AI 视觉创作导师',
-    skill: '数媒专业出身，积累丰富 Midjourney 绘图实战经验',
-    quote: '掌握视觉语言，才能让 AI 按你的想象稳定出片',
+    role: 'AI 绘图导师',
+    bio: [
+      '数字媒体专业，长期深耕 AI 视觉生成领域，积累大量 Midjourney 商业绘图实战案例。',
+      '以成熟审美逻辑驱动 AI，稳定输出贴合需求的高质量视觉画面。',
+    ],
+  },
+  {
+    name: '肖慧',
+    role: 'AI 视觉导师',
+    bio: [
+      '工业设计背景，兼具扎实美学功底与产品思维。',
+      '主导多个品牌级 AI 视觉项目，可完整把控需求拆解至方案交付全流程。',
+    ],
+  },
+];
+
+export const GUEST_MENTORS: MentorProfile[] = [
+  {
+    name: '刘山',
+    role: '导演（代表作《只此青绿》）',
+    bio: [
+      '深耕专业级电影美术指导与视觉特效领域，擅长融合东方美学与电影视觉语言。',
+      '把控整体视觉审美基调，依托专业美术指导经验，打造多领域顶级视觉作品。',
+    ],
+  },
+  {
+    name: '朱文婕',
+    role: '深圳电影厂内容创制总监',
+    bio: [
+      '长期深耕影视产业内容孵化，专注行业趋势研判、优质影视项目开发。',
+      '洞察市场风向，挖掘具备生命力的故事，实现创意到项目落地的商业化转化。',
+    ],
+  },
+  {
+    name: '李森',
+    role: '深圳电影厂制片人',
+    bio: [
+      '擅长优质影视剧目全周期开发，精通项目立项、摄制及落地统筹，拥有完整影视制片实操经验。',
+      '深耕内容打磨，将优质剧本落地为适配市场的成熟影视作品。',
+    ],
+  },
+  {
+    name: '倪文雯',
+    role: '深圳电影厂编剧工作室主理人',
+    bio: [
+      '立足市场挖掘优质选题，擅长运用 AI 赋能剧本开发。',
+      '深谙市场逻辑，借力 AI 高效创作，打通创意到剧本的落地路径。',
+    ],
   },
 ];
 
 export const MENTOR_META = {
-  eyebrow: '方直智胜 AIGC 教研团队',
+  eyebrow: '一、教研团队',
   sub: '全职教研团队负责日常带班，产业导师带来影视行业方法。',
-  guestTitle: '特邀产业导师｜深圳电影制片厂',
+  guestTitle: '二、特邀专家',
   guestDesc: '聚焦影视生产流程、真实项目案例与行业人才标准。',
   modelTitle: '教学模式说明',
   modelDesc: '教研团队贯穿 31 天实训周期，产业导师提供专题课程。',

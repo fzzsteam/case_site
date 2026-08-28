@@ -15,6 +15,8 @@ import {
   MENTORS,
   MODULES,
   PERSONAS,
+  GUEST_MENTORS,
+  type MentorProfile,
 } from './content';
 import { BADGE_ICONS, IconCheck } from './icons';
 import { CountUp, Marquee, Reveal, TiltCard } from './primitives';
@@ -182,6 +184,42 @@ export function GainsSection() {
 }
 
 /* 板块四：导师阵容 */
+function MentorCard({
+  mentor,
+  index,
+  label,
+  delay,
+}: {
+  mentor: MentorProfile;
+  index: number;
+  label: string;
+  delay: number;
+}) {
+  return (
+    <Reveal delay={delay}>
+      <TiltCard className="aigc-mentor">
+        <div className="aigc-mentor__head">
+          <span className="aigc-mentor__index">{String(index + 1).padStart(2, '0')}</span>
+          <span className="aigc-mentor__head-label">{label}</span>
+        </div>
+        <div className="aigc-mentor__body">
+          <p className="aigc-mentor__role">{mentor.role}</p>
+          <p className="aigc-mentor__name">{mentor.name}</p>
+          <div className="aigc-mentor__bio">
+            {mentor.bio.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        </div>
+        <div className="aigc-mentor__footer">
+          <span>REAL-WORLD METHOD</span>
+          <i aria-hidden="true" />
+        </div>
+      </TiltCard>
+    </Reveal>
+  );
+}
+
 export function MentorsSection() {
   return (
     <section className="aigc-section" id="mentors">
@@ -200,42 +238,38 @@ export function MentorsSection() {
           <p className="aigc-mentor-group">{MENTOR_META.eyebrow}</p>
         </Reveal>
 
-        <div className="aigc-grid-4 aigc-mentor-grid">
+        <div className="aigc-grid-4 aigc-mentor-grid aigc-mentor-grid--team">
           {MENTORS.map((m, i) => (
-            <Reveal key={m.name} delay={i * 100}>
-              <TiltCard className="aigc-mentor">
-                <div className="aigc-mentor__head">
-                  <span className="aigc-mentor__index">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="aigc-mentor__head-label">FIELD MENTOR</span>
-                </div>
-                <div className="aigc-mentor__body">
-                  <p className="aigc-mentor__role">{m.role}</p>
-                  <p className="aigc-mentor__name">{m.name}</p>
-                  <p className="aigc-mentor__skill">擅长：{m.skill}</p>
-                  <p className="aigc-mentor__quote">「{m.quote}」</p>
-                </div>
-                <div className="aigc-mentor__footer">
-                  <span>REAL-WORLD METHOD</span>
-                  <i aria-hidden="true" />
-                </div>
-              </TiltCard>
-            </Reveal>
+            <MentorCard
+              key={m.name}
+              mentor={m}
+              index={i}
+              label="TEACHING TEAM"
+              delay={i * 100}
+            />
           ))}
         </div>
 
-        <div className="aigc-mentor-notes">
-          <Reveal variant="left">
-            <div className="aigc-mentor-note aigc-mentor-note--guest">
-              <span className="aigc-mentor-note__mark" aria-hidden>01</span>
-              <div>
-                <h3>{MENTOR_META.guestTitle}</h3>
-                <p>{MENTOR_META.guestDesc}</p>
-              </div>
-            </div>
-          </Reveal>
+        <Reveal>
+          <p className="aigc-mentor-group aigc-mentor-group--guest">{MENTOR_META.guestTitle}</p>
+        </Reveal>
+
+        <div className="aigc-grid-4 aigc-mentor-grid aigc-mentor-grid--guest">
+          {GUEST_MENTORS.map((m, i) => (
+            <MentorCard
+              key={m.name}
+              mentor={m}
+              index={i}
+              label="SPECIAL EXPERT"
+              delay={i * 100}
+            />
+          ))}
+        </div>
+
+        <div className="aigc-mentor-notes aigc-mentor-notes--single">
           <Reveal variant="right" delay={100}>
             <div className="aigc-mentor-note aigc-mentor-note--model">
-              <span className="aigc-mentor-note__mark" aria-hidden>02</span>
+              <span className="aigc-mentor-note__mark" aria-hidden>01</span>
               <div>
                 <h3>{MENTOR_META.modelTitle}</h3>
                 <p>{MENTOR_META.modelDesc}</p>

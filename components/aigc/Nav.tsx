@@ -59,11 +59,10 @@ export function Nav() {
             <span className="aigc-nav__brand-main">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                className="aigc-nav__brand-logo"
-                src="/edu/fangzhi-zhisheng-logo.png"
-                alt=""
+                className="aigc-nav__brand-lockup"
+                src={EDU_ASSETS.fangzhiLockup}
+                alt="方直智胜"
               />
-              <span>方直智胜</span>
             </span>
             <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
