@@ -46,7 +46,7 @@ vi.mock("@/lib/acme/store", () => ({
   updateCertId: vi.fn(),
 }));
 
-const ENV_KEYS = ["ALIYUN_ACCESS_KEY_ID", "ALIYUN_ACCESS_KEY_SECRET", "ALB_REGION_ID", "ALB_INSTANCE_ID", "SAE_NAMESPACE_ID", "ACME_DOMAIN", "ACME_RENEW_BEFORE_DAYS"] as const;
+const ENV_KEYS = ["ALIYUN_ACCESS_KEY_ID", "ALIYUN_ACCESS_KEY_SECRET", "ALB_REGION_ID", "ALB_INSTANCE_ID", "SAE_NAMESPACE_ID", "ACME_DOMAIN", "ACME_CERT_DOMAINS", "ACME_DNS_ZONE", "ACME_RENEW_BEFORE_DAYS"] as const;
 
 function enableConfig() {
   process.env.ALIYUN_ACCESS_KEY_ID = "test-key";
@@ -61,6 +61,10 @@ beforeEach(() => {
   for (const key of ENV_KEYS) delete process.env[key];
   vi.mocked(findAlbIngress).mockResolvedValue({ ingressId: 42, certIds: "old-cert-id-cn-hangzhou" });
   vi.mocked(deleteCertificate).mockResolvedValue(undefined);
+  mockReadCertificateInfo.mockReturnValue({
+    domains: { commonName: "fzzsai.com", altNames: ["*.fzzsai.com", "*.edu.fzzsai.com"] },
+    notAfter: new Date(Date.now() + 90 * 86_400_000),
+  });
 });
 
 it("does nothing when acme is not configured", async () => {
@@ -110,7 +114,7 @@ it("issues a new certificate via Let's Encrypt when nothing is cached", async ()
 
   await syncCertificate();
 
-  expect(mockCreateCsr).toHaveBeenCalledWith({ altNames: ["fzzsai.com", "*.fzzsai.com"] });
+  expect(mockCreateCsr).toHaveBeenCalledWith({ altNames: ["fzzsai.com", "*.fzzsai.com", "*.edu.fzzsai.com"] });
   expect(mockAuto).toHaveBeenCalledWith(
     expect.objectContaining({ termsOfServiceAgreed: true, challengePriority: ["dns-01"] }),
   );
@@ -161,13 +165,13 @@ it("wires the DNS-01 challenge callbacks to createChallengeRecord and removeChal
   vi.mocked(uploadCertificate).mockResolvedValue("new-cert-id");
   mockAuto.mockImplementation(async (opts: { challengeCreateFn: Function; challengeRemoveFn: Function }) => {
     const challenge = { type: "dns-01", token: "token-1" };
-    await opts.challengeCreateFn({}, challenge, "key-authorization-value");
-    await opts.challengeRemoveFn({}, challenge, "key-authorization-value");
+    await opts.challengeCreateFn({ identifier: { value: "*.edu.fzzsai.com" } }, challenge, "key-authorization-value");
+    await opts.challengeRemoveFn({ identifier: { value: "*.edu.fzzsai.com" } }, challenge, "key-authorization-value");
     return "fullchain";
   });
 
   await syncCertificate();
 
-  expect(createChallengeRecord).toHaveBeenCalledWith("test-key", "test-secret", "fzzsai.com", "key-authorization-value");
+  expect(createChallengeRecord).toHaveBeenCalledWith("test-key", "test-secret", "fzzsai.com", "*.edu.fzzsai.com", "key-authorization-value");
   expect(removeChallengeRecord).toHaveBeenCalledWith("test-key", "test-secret", "record-1");
 });

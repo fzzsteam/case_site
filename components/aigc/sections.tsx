@@ -490,6 +490,8 @@ export function SiteFooter() {
           </div>
 
           <div className="aigc-footer__links">
+            <a href="/edu#modules">实训体系</a>
+            <a href="/edu/talent">人才集市</a>
             <a href={siteConfig.icpUrl} target="_blank" rel="noreferrer">
               {siteConfig.icp}
             </a>

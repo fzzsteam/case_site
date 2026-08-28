@@ -17,6 +17,16 @@ function formatTimestamp(date: Date): string {
 
 type EnabledAcmeConfig = Extract<ReturnType<typeof getAcmeConfig>, { enabled: true }>;
 
+function certificateIncludesDomains(fullchain: string, requiredDomains: string[]) {
+  try {
+    const info = acme.crypto.readCertificateInfo(fullchain);
+    const names = new Set([info.domains.commonName, ...info.domains.altNames].map((name) => name.toLowerCase()));
+    return requiredDomains.every((domain) => names.has(domain.toLowerCase()));
+  } catch {
+    return false;
+  }
+}
+
 async function bindAndCleanup(config: EnabledAcmeConfig, fullchain: string, privateKey: string): Promise<string> {
   const { accessKeyId, accessKeySecret, albRegionId, albInstanceId, saeNamespaceId, listenerPort, certName } = config;
 
@@ -49,7 +59,7 @@ async function bindAndCleanup(config: EnabledAcmeConfig, fullchain: string, priv
 }
 
 async function issueNewCertificate(config: EnabledAcmeConfig) {
-  const { domain, accessKeyId, accessKeySecret, email } = config;
+  const { domain, certificateDomains, dnsZone, accessKeyId, accessKeySecret, email } = config;
 
   log("向 Let's Encrypt 申请新证书（DNS-01，走阿里云云解析）...");
 
@@ -59,7 +69,7 @@ async function issueNewCertificate(config: EnabledAcmeConfig) {
     accountKey,
   });
 
-  const [privateKeyBuffer, csr] = await acme.crypto.createCsr({ altNames: [domain, `*.${domain}`] });
+  const [privateKeyBuffer, csr] = await acme.crypto.createCsr({ altNames: certificateDomains });
 
   const pendingRecords = new Map<string, string>();
 
@@ -70,7 +80,7 @@ async function issueNewCertificate(config: EnabledAcmeConfig) {
     challengePriority: ["dns-01"],
     challengeCreateFn: async (_authz, challenge, keyAuthorization) => {
       if (challenge.type !== "dns-01") return;
-      const recordId = await createChallengeRecord(accessKeyId, accessKeySecret, domain, keyAuthorization);
+      const recordId = await createChallengeRecord(accessKeyId, accessKeySecret, dnsZone, _authz.identifier.value, keyAuthorization);
       pendingRecords.set(challenge.token, recordId);
     },
     challengeRemoveFn: async (_authz, challenge) => {
@@ -103,7 +113,10 @@ export async function syncCertificate(): Promise<void> {
 
     if (cached) {
       const remainingDays = Math.floor((cached.notAfter.getTime() - Date.now()) / 86_400_000);
-      if (remainingDays > config.renewBeforeDays) {
+      const coversRequiredDomains = certificateIncludesDomains(cached.fullchain, config.certificateDomains);
+      if (!coversRequiredDomains) {
+        log(`缓存证书缺少所需域名（${config.certificateDomains.join(", ")}），进入补发流程`);
+      } else if (remainingDays > config.renewBeforeDays) {
         log(`数据库里的证书还有 ${remainingDays} 天到期（超过阈值 ${config.renewBeforeDays} 天），直接复用，不请求 Let's Encrypt`);
 
         const ingress = await findAlbIngress(config.accessKeyId, config.accessKeySecret, config.albRegionId, config.saeNamespaceId, config.albInstanceId, config.listenerPort);

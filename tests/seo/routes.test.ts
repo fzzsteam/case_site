@@ -14,7 +14,10 @@ it("publishes the static pages and every case detail page in the sitemap", async
     "http://localhost:3000/cases",
     "http://localhost:3000/about",
     "http://localhost:3000/edu",
+    "http://localhost:3000/edu/talent",
     "http://localhost:3000/cases/an-li-yi",
+    "http://localhost:3000/edu/talent/ouyang",
+    "http://localhost:3000/edu/talent/lin-yifan",
   ]);
 });
 it("keeps API routes and the admin backend out of search results", () => expect(robots().rules).toEqual(expect.objectContaining({ disallow: ["/api/", "/admin"] })));

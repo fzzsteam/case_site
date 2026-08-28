@@ -31,6 +31,12 @@ SESSION_SECRET=change-me-to-a-long-random-string
 
 Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` 同源代理并缓存，视频仅在点击播放后由 `/api/media/video-url` 返回 15 分钟签名 URL。AccessKey 只能设置为服务端环境变量，禁止添加 `NEXT_PUBLIC_` 前缀。案例对象前缀为 `case-site/cases/`，后台上传的文件统一存放在 `case-site/cases/uploads/` 目录下。
 
+## 人才集市样例
+
+访问 `/edu/talent` 查看人才列表，进入人才详情后可以查看图片、点击播放已上传视频，或在新窗口打开作品集网站。静态作品集的访问地址使用稳定的 `siteSlug.edu.fzzsai.com`，例如 `site-k7m3x9p.edu.fzzsai.com`；域名请求由一个 SAE 网关路由按 Host 识别 slug，再读取对应站点文件，不需要为每个作品单独创建 DNS 或 SAE 路由。
+
+当前样例站点保存在 `public/portfolio/site-k7m3x9p/`，用于本地预览。生产部署静态源码时，将构建后的文件（根目录必须有 `index.html`）上传到私有 OSS 的 `portfolio-sites/<siteSlug>/` 前缀，并设置 `PORTFOLIO_STORAGE=oss`。应用会通过同一个 `siteSlug.edu.fzzsai.com` 代理读取 HTML、CSS、JS、图片和视频，浏览器不会直接拿到 OSS 地址；视频请求会透传 Range，支持拖动播放。上传入口和人才数据后台暂未开放，当前后台只提供只读人才列表。
+
 ## 案例管理后台
 
 首次连接一个空的 MySQL 数据库时，应用启动会自动建表、写入默认分类与内置的 11 个案例（`lib/cases/seed-data.ts`），并生成一个随机初始密码（存储为哈希，不落明文）。初始密码会显示在 `/admin/login` 页面上，登录后请在「账号设置」里尽快修改；修改过一次后，登录页就不会再展示初始密码。
@@ -41,11 +47,11 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 
 ## HTTPS 证书自动续签（可选）
 
-如果域名是通过 SAE 的"网关路由"转发到 ALB 的（SAE 控制台里叫"网关路由"，后端 API 其实是 Ingress），可以配置 `ALIYUN_ACCESS_KEY_ID`/`ALIYUN_ACCESS_KEY_SECRET`/`ALB_REGION_ID`/`ALB_INSTANCE_ID` 等环境变量（见 `.env.example`），应用启动时会自动向 Let's Encrypt 申请通配符证书（DNS-01，走阿里云云解析）、上传到数字证书管理服务、通过 SAE 的 Ingress 接口更新网关路由绑定的证书，并按周期（默认 12 小时检查一次）自动续签。
+如果域名是通过 SAE 的"网关路由"转发到 ALB 的（SAE 控制台里叫"网关路由"，后端 API 其实是 Ingress），可以配置 `ALIYUN_ACCESS_KEY_ID`/`ALIYUN_ACCESS_KEY_SECRET`/`ALB_REGION_ID`/`ALB_INSTANCE_ID` 等环境变量（见 `.env.example`），应用启动时会自动向 Let's Encrypt 申请多域名证书（默认包含 `fzzsai.com`、`*.fzzsai.com`、`*.edu.fzzsai.com`，DNS-01 走阿里云云解析）、上传到数字证书管理服务、通过 SAE 的 Ingress 接口更新网关路由绑定的证书，并按周期（默认 12 小时检查一次）自动续签。
 
 **证书必须通过 SAE 的 Ingress 接口更新，不能直接改 ALB 监听器**——SAE 会周期性把自己保存的路由配置（含证书）同步覆盖到 ALB 上，直接改 ALB 监听器的证书会在毫无提示的情况下被 SAE 改回去。
 
-证书本身缓存在 MySQL 的 `acme_certificates` 表里，重新部署不会触发重复签发（Let's Encrypt 对同一组域名有每 7 天最多 5 次的限制），也不会重复上传/绑定（每次启动会先检查 SAE 网关路由上绑定的证书是否已经是数据库里缓存的这张，一致就跳过），只有距离到期不足 30 天、或者发现绑定的证书对不上时才会真正发起续签/重新绑定。相关代码在 `lib/acme/`，逻辑由 `instrumentation.ts` 在应用启动时触发，不需要额外的容器或脚本。不配置这些变量时该功能完全不生效，不影响正常部署。
+证书本身缓存在 MySQL 的 `acme_certificates` 表里，重新部署不会触发重复签发（Let's Encrypt 对同一组域名有每 7 天最多 5 次的限制），也不会重复上传/绑定（每次启动会先检查 SAE 网关路由上绑定的证书是否已经是这组域名的证书，一致就跳过），只有证书缺少所需 SAN、距离到期不足 30 天、或者发现绑定的证书对不上时才会真正发起续签/重新绑定。相关代码在 `lib/acme/`，逻辑由 `instrumentation.ts` 在应用启动时触发，不需要额外的容器或脚本。不配置这些变量时该功能完全不生效，不影响正常部署。
 
 需要的权限：`AliyunDNSFullAccess`（DNS-01 校验）、`AliyunYundunCertFullAccess`（数字证书管理服务，证书上传/删除）、`AliyunSAEFullAccess`（更新网关路由绑定的证书）。
 

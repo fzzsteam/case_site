@@ -1,15 +1,24 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { EDU_ASSETS, NAV_LINKS } from './content';
 import { CtaButton } from './LeadProvider';
 import { IconClose } from './icons';
 
+const MODULE_LINKS = [
+  { href: '/edu#modules', label: '实训体系', key: 'training' },
+  { href: '/edu/talent', label: '人才集市', key: 'talent' },
+] as const;
+
 export function Nav() {
+  const pathname = usePathname();
+  const isTalentPage = pathname.startsWith('/edu/talent');
+  const isTrainingPage = !isTalentPage && (pathname === '/' || pathname === '/edu' || pathname.startsWith('/edu/'));
   const [stuck, setStuck] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [active, setActive] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const { visible: courseVisible, active: activeCourse } = useCourseDirectory(isTrainingPage);
 
   useEffect(() => {
     const onScroll = () => {
@@ -32,95 +41,162 @@ export function Nav() {
     return () => document.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
-  useEffect(() => {
-    const sections = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(
-      (el): el is HTMLElement => Boolean(el),
-    );
-    if (!sections.length || typeof IntersectionObserver === 'undefined') return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActive(visible.target.id);
-      },
-      { rootMargin: '-45% 0px -45% 0px', threshold: [0, 0.25, 0.6] },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  }, []);
+  const activeModule = isTalentPage ? 'talent' : isTrainingPage ? 'training' : '';
+  const showCourseDirectory = isTrainingPage && courseVisible;
 
   return (
-    <header className={`aigc-nav ${stuck ? 'is-stuck' : ''}`}>
-      <div className="aigc-shell">
-        <div className="aigc-nav__inner">
-          <a className="aigc-nav__brand aigc-nav__brand--lockup" href="#top">
-            <span className="aigc-nav__brand-main">
+    <>
+      <header className={`aigc-nav ${stuck ? 'is-stuck' : ''}`}>
+        <div className="aigc-shell">
+          <div className="aigc-nav__inner">
+            <a className="aigc-nav__brand aigc-nav__brand--lockup" href={isTrainingPage ? '#top' : '/edu'}>
+              <span className="aigc-nav__brand-main">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="aigc-nav__brand-lockup"
+                  src={EDU_ASSETS.fangzhiLockup}
+                  alt="方直智胜"
+                />
+              </span>
+              <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                className="aigc-nav__brand-lockup"
-                src={EDU_ASSETS.fangzhiLockup}
-                alt="方直智胜"
+                className="aigc-nav__partner-logo"
+                src={EDU_ASSETS.szfsLogo}
+                alt="深圳电影制片厂"
               />
-            </span>
-            <span className="aigc-nav__brand-separator" aria-hidden="true">×</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              className="aigc-nav__partner-logo"
-              src={EDU_ASSETS.szfsLogo}
-              alt="深圳电影制片厂"
-            />
-          </a>
+            </a>
 
-          <nav className="aigc-nav__links">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.id}
-                className={`aigc-nav__link ${active === l.id ? 'is-active' : ''}`}
-                href={`#${l.id}`}
+            {isTrainingPage && (
+              <nav className={`aigc-nav__course-links ${showCourseDirectory ? 'is-visible' : ''}`} aria-label="实训课程目录">
+                {NAV_LINKS.map((link) => (
+                  <a
+                    key={link.id}
+                    className={`aigc-nav__course-link ${activeCourse === link.id ? 'is-active' : ''}`}
+                    href={`#${link.id}`}
+                    aria-current={activeCourse === link.id ? 'location' : undefined}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+            )}
+
+            <nav className="aigc-nav__links aigc-nav__links--modules" aria-label="全局模块导航">
+              {MODULE_LINKS.map((link) => (
+                <a
+                  key={link.key}
+                  className={`aigc-nav__link ${activeModule === link.key ? 'is-active' : ''}`}
+                  href={link.href}
+                  aria-current={activeModule === link.key ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="aigc-nav__actions">
+              <CtaButton source="openclass" size="sm" withArrow={false}>
+                预约公开课
+              </CtaButton>
+              <button
+                type="button"
+                className={`aigc-nav__menu-toggle${menuOpen ? ' is-open' : ''}`}
+                aria-expanded={menuOpen}
+                aria-controls="aigc-mobile-menu"
+                aria-label={menuOpen ? '关闭导航菜单' : '打开导航菜单'}
+                onClick={() => setMenuOpen((value) => !value)}
               >
-                {l.label}
+                {menuOpen ? <IconClose size={19} /> : <span className="aigc-nav__menu-lines" aria-hidden />}
+              </button>
+            </div>
+          </div>
+
+          <nav
+            id="aigc-mobile-menu"
+            className={`aigc-nav__mobile-menu${menuOpen ? ' is-open' : ''}`}
+            aria-label="移动端模块导航"
+          >
+            {showCourseDirectory && (
+              <div className="aigc-nav__mobile-course">
+                <span>课程目录</span>
+                <nav aria-label="移动端实训课程目录">
+                  {NAV_LINKS.map((link) => (
+                    <a key={link.id} className={activeCourse === link.id ? 'is-active' : ''} href={`#${link.id}`} onClick={() => setMenuOpen(false)}>
+                      {link.label}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            )}
+            {MODULE_LINKS.map((link) => (
+              <a
+                key={link.key}
+                className={`aigc-nav__mobile-link ${activeModule === link.key ? 'is-active' : ''}`}
+                href={link.href}
+                aria-current={activeModule === link.key ? 'page' : undefined}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span>{link.label}</span>
+                <span aria-hidden>↗</span>
               </a>
             ))}
           </nav>
-
-          <div className="aigc-nav__actions">
-            <CtaButton source="openclass" size="sm" withArrow={false}>
-              预约公开课
-            </CtaButton>
-            <button
-              type="button"
-              className={`aigc-nav__menu-toggle${menuOpen ? ' is-open' : ''}`}
-              aria-expanded={menuOpen}
-              aria-controls="aigc-mobile-menu"
-              aria-label={menuOpen ? '关闭导航菜单' : '打开导航菜单'}
-              onClick={() => setMenuOpen((value) => !value)}
-            >
-              {menuOpen ? <IconClose size={19} /> : <span className="aigc-nav__menu-lines" aria-hidden />}
-            </button>
-          </div>
         </div>
-
-        <nav
-          id="aigc-mobile-menu"
-          className={`aigc-nav__mobile-menu${menuOpen ? ' is-open' : ''}`}
-          aria-label="移动端导航"
-        >
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.id}
-              className={`aigc-nav__mobile-link ${active === link.id ? 'is-active' : ''}`}
-              href={`#${link.id}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>{link.label}</span>
-              <span aria-hidden>↗</span>
-            </a>
-          ))}
-        </nav>
-      </div>
-      <i className="aigc-nav__progress" style={{ ['--p' as string]: `${progress}%` }} />
-    </header>
+        <i className="aigc-nav__progress" style={{ ['--p' as string]: `${progress}%` }} />
+      </header>
+    </>
   );
+}
+
+/** 实训页专属目录状态：滚过 Hero 后切换到顶栏中部。 */
+function useCourseDirectory(enabled: boolean) {
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState<string>('');
+
+  useEffect(() => {
+    if (!enabled) {
+      setVisible(false);
+      return;
+    }
+
+    const hero = document.getElementById('top');
+    const updateVisibility = () => {
+      const threshold = hero ? hero.getBoundingClientRect().bottom <= 82 : window.scrollY > 80;
+      setVisible(threshold);
+    };
+    updateVisibility();
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', updateVisibility);
+    return () => {
+      window.removeEventListener('scroll', updateVisibility);
+      window.removeEventListener('resize', updateVisibility);
+    };
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setActive('');
+      return;
+    }
+
+    const sections = NAV_LINKS.map((link) => document.getElementById(link.id)).filter(
+      (element): element is HTMLElement => Boolean(element),
+    );
+    if (!sections.length || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (intersecting) setActive(intersecting.target.id);
+      },
+      { rootMargin: '-24% 0px -62% 0px', threshold: [0, 0.2, 0.55] },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [enabled]);
+
+  return { visible, active };
 }

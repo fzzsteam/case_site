@@ -37,3 +37,9 @@ it("treats an invalid session cookie as unauthenticated", async () => {
   const response = await proxy(request);
   expect(response.status).toBe(307);
 });
+
+it("rewrites a portfolio subdomain to its stable site slug route", async () => {
+  const response = await proxy(new NextRequest("https://site-k7m3x9p.edu.fzzsai.com/"));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("x-middleware-rewrite")).toContain("/portfolio-host/site-k7m3x9p");
+});

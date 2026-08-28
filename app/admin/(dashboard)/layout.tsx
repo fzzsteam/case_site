@@ -2,11 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Clapperboard, KeyRound, LogOut, Menu, Settings, Tags, X } from "lucide-react";
+import { Clapperboard, KeyRound, LogOut, Menu, Settings, Tags, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin/cases", label: "案例管理", icon: Clapperboard },
+  { href: "/admin/talents", label: "人才集市", icon: Users },
   { href: "/admin/categories", label: "分类管理", icon: Tags },
   { href: "/admin/tokens", label: "MCP Token", icon: KeyRound },
   { href: "/admin/settings", label: "账号设置", icon: Settings },

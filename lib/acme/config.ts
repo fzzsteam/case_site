@@ -5,6 +5,8 @@ type AcmeConfig =
   | {
       enabled: true;
       domain: string;
+      certificateDomains: string[];
+      dnsZone: string;
       accessKeyId: string;
       accessKeySecret: string;
       albRegionId: string;
@@ -19,6 +21,7 @@ type AcmeConfig =
 
 export function getAcmeConfig(): AcmeConfig {
   const domain = process.env.ACME_DOMAIN || "fzzsai.com";
+  const certificateDomains = Array.from(new Set((process.env.ACME_CERT_DOMAINS || `${domain},*.${domain},*.edu.${domain}`).split(",").map((item) => item.trim().toLowerCase()).filter(Boolean)));
   const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
   const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
   const albRegionId = process.env.ALB_REGION_ID;
@@ -29,6 +32,8 @@ export function getAcmeConfig(): AcmeConfig {
   return {
     enabled: true,
     domain,
+    certificateDomains,
+    dnsZone: process.env.ACME_DNS_ZONE || domain,
     accessKeyId,
     accessKeySecret,
     albRegionId,
