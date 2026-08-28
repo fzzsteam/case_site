@@ -13,7 +13,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
     role: "AI视觉创作者 / AIGC内容运营",
     intro: "扎根消费品牌内容赛道，兼具内容审美与业务思维，持续把 AI 视觉与内容运营沉淀成可交付的商业作品。",
     bio: "擅长从选题策划、视觉生成到短视频产出与数据复盘，覆盖文旅宣传、产品广告和新媒体内容运营等方向。",
-    avatarPath: talentAsset("avatars", "ouyang.webp"),
+    avatarPath: talentAsset("avatars", "ouyang-v2.webp"),
     location: "深圳",
     skills: ["短视频剪辑", "影视海报", "AIGC插画", "数字人"],
     works: [
@@ -35,6 +35,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
     role: "AI视觉设计师 / 短视频创作者",
     intro: "主攻 AIGC 电商视觉设计，副线 AI 短视频内容运营，用视觉创意服务品牌表达和内容传播。",
     bio: "聚焦电商视觉、短视频内容和 AI 创意策划，形成从创意构思、视觉制作到内容交付的完整工作链路。",
+    avatarPath: talentAsset("avatars", "lin-yifan.webp"),
     location: "深圳",
     skills: ["短视频剪辑", "影视海报", "AIGC插画"],
     works: [

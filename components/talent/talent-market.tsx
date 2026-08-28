@@ -42,14 +42,16 @@ function FilterButton({
 function TalentCard({ talent }: { talent: TalentProfile }) {
   const featured = talent.works[0];
   const featuredType = featured?.type ?? 'image';
+  const visualPath = talent.avatarPath ?? featured?.coverPath;
+  const visualAlt = talent.avatarPath ? `${talent.name}头像` : `${talent.name}的代表作品`;
 
   return (
     <Reveal variant="scale" className="aigc-talent-grid__item">
       <Link className="aigc-card aigc-talent-card" href={`/edu/talent/${talent.id}`} aria-label={`查看${talent.name}的人才详情`}>
         <div className="aigc-talent-card__visual">
-          {featured?.coverPath ? (
+          {visualPath ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={aigcImageUrl(featured.coverPath)} alt={`${talent.name}的代表作品`} loading="lazy" />
+            <img src={aigcImageUrl(visualPath)} alt={visualAlt} loading="lazy" />
           ) : (
             <div className="aigc-talent-card__placeholder" aria-hidden="true">
               <span>{talent.name.slice(0, 1)}</span>
