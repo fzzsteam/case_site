@@ -17,6 +17,8 @@ export async function migrateTalentData(): Promise<void> {
   await db.transaction(async (tx) => {
     // 这三个旧样例属于欧阳的非网站作品，确保历史数据升级后也符合当前资料口径。
     await tx.delete(talentWorks).where(inArray(talentWorks.id, ["ouyang-heyuan", "ouyang-orange", "ouyang-visual"]));
+    // 清理上一版把视频合并到一起的虚构学员，避免历史资料残留在人才列表中。
+    await tx.delete(talentProfiles).where(inArray(talentProfiles.id, ["gu-qinghe", "xu-zhixing", "shen-wanqing"]));
 
     for (const [talentIndex, talent] of DEMO_TALENTS.entries()) {
       await tx.insert(talentProfiles).values({

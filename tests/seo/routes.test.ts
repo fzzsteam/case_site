@@ -13,9 +13,16 @@ it("publishes the static pages and every case detail page in the sitemap", async
   vi.mocked(listTalentProfiles).mockResolvedValue([
     { id: "ouyang", name: "欧阳", role: "", intro: "", bio: "", skills: [], works: [] },
     { id: "lin-yifan", name: "林一帆", role: "", intro: "", bio: "", skills: [], works: [] },
-    { id: "gu-qinghe", name: "顾清禾", role: "", intro: "", bio: "", skills: [], works: [] },
-    { id: "xu-zhixing", name: "许知行", role: "", intro: "", bio: "", skills: [], works: [] },
-    { id: "shen-wanqing", name: "沈晚晴", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "li-na", name: "李娜", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "wang-hao", name: "王浩", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "zhang-min", name: "张敏", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "liu-yang", name: "刘洋", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "chen-jie", name: "陈杰", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "yang-lei", name: "杨磊", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "zhao-jing", name: "赵静", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "huang-wei", name: "黄伟", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "wu-ting", name: "吴婷", role: "", intro: "", bio: "", skills: [], works: [] },
+    { id: "zhou-peng", name: "周鹏", role: "", intro: "", bio: "", skills: [], works: [] },
   ]);
   const urls = (await sitemap()).map((entry) => entry.url);
   expect(urls).toEqual([
@@ -27,9 +34,16 @@ it("publishes the static pages and every case detail page in the sitemap", async
     "http://localhost:3000/cases/an-li-yi",
     "http://localhost:3000/edu/talent/ouyang",
     "http://localhost:3000/edu/talent/lin-yifan",
-    "http://localhost:3000/edu/talent/gu-qinghe",
-    "http://localhost:3000/edu/talent/xu-zhixing",
-    "http://localhost:3000/edu/talent/shen-wanqing",
+    "http://localhost:3000/edu/talent/li-na",
+    "http://localhost:3000/edu/talent/wang-hao",
+    "http://localhost:3000/edu/talent/zhang-min",
+    "http://localhost:3000/edu/talent/liu-yang",
+    "http://localhost:3000/edu/talent/chen-jie",
+    "http://localhost:3000/edu/talent/yang-lei",
+    "http://localhost:3000/edu/talent/zhao-jing",
+    "http://localhost:3000/edu/talent/huang-wei",
+    "http://localhost:3000/edu/talent/wu-ting",
+    "http://localhost:3000/edu/talent/zhou-peng",
   ]);
 });
 it("keeps API routes and the admin backend out of search results", () => expect(robots().rules).toEqual(expect.objectContaining({ disallow: ["/api/", "/admin"] })));
