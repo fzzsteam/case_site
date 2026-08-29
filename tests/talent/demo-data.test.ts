@@ -9,9 +9,14 @@ it("keeps the requested talent portfolio structure", () => {
   expect(DEMO_TALENTS).toHaveLength(12);
   expect(ouyang?.works).toHaveLength(1);
   expect(ouyang?.works[0].type).toBe("website");
+  expect(ouyang?.works[0].title).toBe("AI视觉创作者 / AIGC内容运营");
   expect(ouyang?.avatarPath).toBe("case-site/cases/aigc-talent/avatars/ouyang-v2.webp");
   expect(lin?.works).toHaveLength(2);
   expect(lin?.works.every((work) => work.type === "website")).toBe(true);
+  expect(lin?.works.map((work) => work.title)).toEqual([
+    "AI视觉创作者 / 新媒体视觉设计 / AI创意策划",
+    "AI电商视觉设计师 / 短视频创作者",
+  ]);
   expect(lin?.avatarPath).toBe("case-site/cases/aigc-talent/avatars/lin-yifan.webp");
   expect(uploaded).toHaveLength(10);
   expect(uploaded.map((talent) => talent.name)).toEqual(["李娜", "王浩然", "张敏", "刘洋", "陈杰", "杨磊", "赵静怡", "黄伟", "吴婷婷", "周鹏飞"]);

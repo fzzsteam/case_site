@@ -20,7 +20,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
       {
         id: "ouyang-portfolio",
         slug: "site-k7m3x9p",
-        title: "欧阳 · AI视觉创作者作品集",
+        title: "AI视觉创作者 / AIGC内容运营",
         type: "website",
         source: "static",
         summary: "个人案例网站，集中呈现视觉创作、商业短片和品牌内容运营作品。",
@@ -42,7 +42,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
       {
         id: "lin-qwenwork",
         slug: "lin-yifan-qwenwork",
-        title: "AI视觉创作者作品集",
+        title: "AI视觉创作者 / 新媒体视觉设计 / AI创意策划",
         type: "website",
         source: "external",
         summary: "AIGC 内容运营、新媒体视觉设计与 AI 创意策划案例。",
@@ -52,7 +52,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
       {
         id: "lin-workbuddy",
         slug: "lin-yifan-workbuddy",
-        title: "AI电商视觉与短视频作品集",
+        title: "AI电商视觉设计师 / 短视频创作者",
         type: "website",
         source: "external",
         summary: "AI 电商视觉设计、短视频创作与品牌内容案例。",

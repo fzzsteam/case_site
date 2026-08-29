@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, FileImage, Globe2, Play, Search, Users } from 'lucide-react';
+import { ArrowUpRight, FileImage, Globe2, Play, Search, SlidersHorizontal, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { aigcImageUrl } from '@/components/aigc/media';
 import { Reveal } from '@/components/aigc/primitives';
@@ -95,6 +95,7 @@ export function TalentMarket({ talents }: TalentMarketProps) {
   const [query, setQuery] = useState('');
   const [skill, setSkill] = useState<string>('全部');
   const [workType, setWorkType] = useState<'全部' | TalentWorkType>('全部');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const filteredTalents = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -115,10 +116,13 @@ export function TalentMarket({ talents }: TalentMarketProps) {
   }, [query, skill, talents, workType]);
 
   const totalWorks = talents.reduce((sum, talent) => sum + talent.works.length, 0);
+  const activeFilterCount = Number(skill !== '全部') + Number(workType !== '全部');
+  const filtersVisible = mobileFiltersOpen || activeFilterCount > 0;
   const clearFilters = () => {
     setQuery('');
     setSkill('全部');
     setWorkType('全部');
+    setMobileFiltersOpen(false);
   };
 
   return (
@@ -139,8 +143,21 @@ export function TalentMarket({ talents }: TalentMarketProps) {
           </div>
 
           <div className="aigc-talent-controls">
-            <TalentSearch query={query} onQueryChange={setQuery} />
-            <div className="aigc-talent-filter-stack">
+            <div className="aigc-talent-search-row">
+              <TalentSearch query={query} onQueryChange={setQuery} />
+              <button
+                type="button"
+                className="aigc-talent-filter-toggle"
+                aria-expanded={filtersVisible}
+                aria-controls="talent-filter-options"
+                onClick={() => setMobileFiltersOpen((open) => !open)}
+              >
+                <SlidersHorizontal size={15} aria-hidden="true" />
+                <span>筛选</span>
+                {activeFilterCount > 0 && <span className="aigc-talent-filter-toggle__count">{activeFilterCount}</span>}
+              </button>
+            </div>
+            <div id="talent-filter-options" className={`aigc-talent-filter-stack${filtersVisible ? ' is-open' : ''}`}>
               <div className="aigc-talent-filter-line">
                 <span className="aigc-talent-filter-label">能力方向</span>
                 <div className="aigc-work-filters" role="group" aria-label="技能分类">
@@ -206,11 +223,23 @@ export function TalentMarket({ talents }: TalentMarketProps) {
 
 export function TalentSearch({ query, onQueryChange }: { query: string; onQueryChange: (value: string) => void }) {
   return (
-    <label className="aigc-talent-search">
+    <div className="aigc-talent-search">
       <Search size={17} aria-hidden="true" />
-      <span className="sr-only">搜索人才、技能或作品</span>
-      <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索人才、技能、作品" />
-    </label>
+      <label className="sr-only" htmlFor="talent-market-search">搜索人才、技能或作品</label>
+      <input
+        id="talent-market-search"
+        type="search"
+        value={query}
+        autoComplete="off"
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder="搜索人才、技能、作品"
+      />
+      {query && (
+        <button type="button" className="aigc-talent-search__clear" aria-label="清除搜索关键词" onClick={() => onQueryChange('')}>
+          <X size={14} aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 
