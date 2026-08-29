@@ -85,7 +85,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
   },
   {
     id: "wang-hao",
-    name: "王浩",
+    name: "王浩然",
     role: "AI文旅影像创作者 / 视觉导演",
     intro: "关注传统建筑与地方人文，用 AI 影像记录有历史感的空间和旅行体验。",
     bio: "擅长提炼建筑轮廓、材质和光影关系，将传统文化场景转化为具有氛围感的文旅短片。",
@@ -195,7 +195,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
   },
   {
     id: "zhao-jing",
-    name: "赵静",
+    name: "赵静怡",
     role: "AI商业视觉设计师 / 产品广告创作者",
     intro: "专注消费品视觉表达，用 AI 放大产品的色彩、质感和新鲜感。",
     bio: "擅长通过摄影式布光、微距细节和简洁构图，完成适合品牌传播的产品视觉内容。",
@@ -239,7 +239,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
   },
   {
     id: "wu-ting",
-    name: "吴婷",
+    name: "吴婷婷",
     role: "AI商业视觉设计师 / 生活方式内容创作者",
     intro: "关注精致生活方式与产品细节，探索 AI 在质感广告和社交内容中的应用。",
     bio: "擅长以夜景、材质反光和人物佩戴场景表现产品气质，完成高级感明确的商业短片。",
@@ -261,7 +261,7 @@ export const DEMO_TALENTS: TalentProfile[] = [
   },
   {
     id: "zhou-peng",
-    name: "周鹏",
+    name: "周鹏飞",
     role: "AI运动影像创作者 / 短视频导演",
     intro: "喜欢用第一视角和运动镜头制造现场感，让 AI 影像更有速度和参与感。",
     bio: "擅长把运动路线、光线变化和镜头运动结合起来，制作有冲击力的骑行与户外短片。",

@@ -14,7 +14,7 @@ it("keeps the requested talent portfolio structure", () => {
   expect(lin?.works.every((work) => work.type === "website")).toBe(true);
   expect(lin?.avatarPath).toBe("case-site/cases/aigc-talent/avatars/lin-yifan.webp");
   expect(uploaded).toHaveLength(10);
-  expect(uploaded.map((talent) => talent.name)).toEqual(["李娜", "王浩", "张敏", "刘洋", "陈杰", "杨磊", "赵静", "黄伟", "吴婷", "周鹏"]);
+  expect(uploaded.map((talent) => talent.name)).toEqual(["李娜", "王浩然", "张敏", "刘洋", "陈杰", "杨磊", "赵静怡", "黄伟", "吴婷婷", "周鹏飞"]);
   expect(uploaded.every((talent) => talent.avatarPath?.startsWith("case-site/cases/aigc-talent/avatars/") && talent.works.length === 1)).toBe(true);
   expect(uploadedWorks.every((work) => work.type === "video" && work.mediaPaths?.length === 1)).toBe(true);
   expect(new Set(uploadedWorks.map((work) => work.coverPath)).size).toBe(10);
