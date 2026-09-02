@@ -41,6 +41,38 @@ export function Hero() {
 
   return (
     <section className="aigc-hero" id="top" aria-labelledby="aigc-hero-title">
+      <div className="aigc-hero__backdrop">
+        {playVideo ? (
+          <video
+            ref={videoRef}
+            src="/api/aigc/hero-video"
+            poster={aigcImageUrl(AIGC_MEDIA.heroPosterPath)}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            onCanPlay={startPlayback}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            aria-label="AIGC 影视内容商业实训现场视频"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={aigcImageUrl(AIGC_MEDIA.heroPosterPath)} alt="AIGC 影视内容商业实训现场" />
+        )}
+        <span className="aigc-hero__backdrop-wash" aria-hidden="true" />
+        <span className="aigc-hero__backdrop-grid" aria-hidden="true" />
+        {playVideo && (
+          <div className="aigc-hero__media-controls">
+            <button type="button" onClick={togglePlayback} aria-label={isPlaying ? '暂停 Hero 背景视频' : '播放 Hero 背景视频'}>
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <span><VolumeX size={13} aria-hidden="true" /> SOUND OFF / HERO BACKGROUND</span>
+          </div>
+        )}
+      </div>
+
       <div className="aigc-shell">
         <div className="aigc-hero__grid">
           <div className="aigc-hero__copy">
@@ -69,60 +101,22 @@ export function Hero() {
               <span><strong>01</strong> 套完整作品集</span>
             </div>
           </div>
+        </div>
 
-          <figure className="aigc-hero__stage">
-            <div className="aigc-stage-grid" aria-hidden="true" />
-            <div className="aigc-stage__topline">
-              <span>FIELD NOTE / 031</span>
-              <span>LIVE PROCESS / SELECT A PATH</span>
-            </div>
+        <div className="aigc-hero__route" aria-label="从输入到交付的训练路径">
+          <span className="aigc-hero__route-line" aria-hidden="true" />
+          <span className="aigc-hero__node aigc-hero__node--input"><b>01</b><small>INPUT</small></span>
+          <span className="aigc-hero__node aigc-hero__node--make"><b>02</b><small>MAKE</small></span>
+          <span className="aigc-hero__node aigc-hero__node--output"><b>03</b><small>OUTPUT</small></span>
+          <span className="aigc-hero__core" aria-hidden="true">INPUT<br />TO OUTPUT</span>
+        </div>
 
-            <div className="aigc-stage__media">
-              {playVideo ? (
-                <video
-                  ref={videoRef}
-                  src="/api/aigc/hero-video"
-                  poster={aigcImageUrl(AIGC_MEDIA.heroPosterPath)}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  onCanPlay={startPlayback}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  aria-label="AIGC 影视内容商业实训现场视频"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={aigcImageUrl(AIGC_MEDIA.heroPosterPath)} alt="AIGC 影视内容商业实训现场" />
-              )}
-              <span className="aigc-stage__media-wash" aria-hidden="true" />
-              {playVideo && (
-                <div className="aigc-stage__controls">
-                  <button type="button" onClick={togglePlayback} aria-label={isPlaying ? '暂停 Hero 视频' : '播放 Hero 视频'}>
-                    {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-                  </button>
-                  <span><VolumeX size={13} aria-hidden="true" /> SOUND OFF</span>
-                </div>
-              )}
-            </div>
-
-            <div className="aigc-stage__route" aria-label="从输入到交付的训练路径">
-              <span className="aigc-stage__route-line" aria-hidden="true" />
-              <span className="aigc-stage__node aigc-stage__node--input"><b>01</b><small>INPUT</small></span>
-              <span className="aigc-stage__node aigc-stage__node--make"><b>02</b><small>MAKE</small></span>
-              <span className="aigc-stage__node aigc-stage__node--output"><b>03</b><small>OUTPUT</small></span>
-            </div>
-
-            <div className="aigc-stage__core">INPUT<br />TO OUTPUT</div>
-            <figcaption className="aigc-stage__caption">
-              <span><small>EDU / AIGC TRAINING</small><strong>输入 → 练习 → 交付</strong></span>
-              <b>31<small>DAYS</small></b>
-            </figcaption>
-          </figure>
+        <div className="aigc-hero__caption">
+          <span><small>EDU / AIGC TRAINING</small><strong>输入 → 练习 → 交付</strong></span>
+          <b>31<small>DAYS</small></b>
         </div>
       </div>
+
       <a className="aigc-hero__scroll" href="#modules">
         <span>向下探索</span>
         <i aria-hidden="true" />

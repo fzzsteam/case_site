@@ -107,10 +107,7 @@ export function ModulesSection() {
                   <IconArrow className="aigc-path-card__arrow" size={18} />
                 </div>
                 <div className="aigc-path-card__body">
-                  <div className="aigc-path-card__visual">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={module.illus} alt="" loading="lazy" aria-hidden="true" />
-                  </div>
+                  <div className="aigc-path-card__descriptor"><span>CAPABILITY / {PATH_STAGES[index].split(' / ')[1]}</span><i aria-hidden="true">↘</i></div>
                   <h3>{module.title}</h3>
                   <p>{module.desc}</p>
                 </div>
@@ -143,10 +140,7 @@ export function PersonasSection() {
             <Reveal key={persona.title} delay={index * 60}>
               <article className="aigc-audience-row">
                 <span className="aigc-audience-row__number">0{index + 1}</span>
-                <div className="aigc-audience-row__visual">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={persona.illus} alt="" loading="lazy" aria-hidden="true" />
-                </div>
+                <div className="aigc-audience-row__rail" aria-hidden="true"><i /></div>
                 <div className="aigc-audience-row__copy">
                   <h3>{persona.title}</h3>
                   <p>{persona.desc}</p>
@@ -315,8 +309,11 @@ export function GainsSection() {
               <div className="aigc-gains-visual__meta"><span>{GAINS_PORTFOLIO.eyebrow}</span><span>OUTPUT / 01</span></div>
               <h3>{GAINS_PORTFOLIO.title}</h3>
               <p>{GAINS_PORTFOLIO.desc}</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={EDU_ASSETS.gainsPortfolio} alt="AIGC 项目作品集、设计源文件、项目过程文档、成片视频与结业证书" loading="lazy" />
+              <div className="aigc-gains-visual__stack" aria-label="作品集交付组成">
+                {GAINS.map((gain, index) => (
+                  <div key={gain.title}><span>0{index + 1}</span><strong>{gain.title}</strong><i aria-hidden="true">↗</i></div>
+                ))}
+              </div>
               <span className="aigc-gains-visual__corner" aria-hidden="true">ARCHIVE / 06</span>
             </aside>
           </Reveal>
@@ -371,10 +368,22 @@ export function EndorsementSection() {
               })}
             </div>
             <Reveal>
-              <div className="aigc-proof-image">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={aigcImageUrl(AIGC_MEDIA.brandPlaquesPath)} alt="鲲鹏应用联合实验室、博士后创新实践基地、广东省智能教学工程技术研究中心牌匾" loading="lazy" />
-                <span>FIELD EVIDENCE / 07</span>
+              <div className="aigc-proof-image aigc-proof-certificate">
+                <div className="aigc-proof-certificate__topline"><span>FIELD EVIDENCE / 07</span><span>VERIFIED / ARCHIVE</span></div>
+                <div className="aigc-proof-certificate__body">
+                  <div className="aigc-proof-certificate__copy">
+                    <span>TRAINING CERTIFICATE</span>
+                    <h3>联合实训<br /><em>结业证书。</em></h3>
+                    <p>方直智胜 × 深圳电影制片厂<br />AIGC 影视内容商业实训营</p>
+                  </div>
+                  <div className="aigc-proof-certificate__source">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={aigcImageUrl(AIGC_MEDIA.brandPlaquesPath)} alt="鲲鹏应用联合实验室、博士后创新实践基地、广东省智能教学工程技术研究中心牌匾" loading="lazy" />
+                    <span>PLAQUE / SOURCE RECORD</span>
+                  </div>
+                </div>
+                <div className="aigc-proof-certificate__facts"><span>鲲鹏应用联合实验室</span><span>博士后创新实践基地</span><span>广东省智能教学工程技术研究中心</span></div>
+                <span className="aigc-proof-image__corner" aria-hidden="true">SOURCE / 001</span>
               </div>
             </Reveal>
           </div>
