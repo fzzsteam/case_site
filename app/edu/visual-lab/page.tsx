@@ -1,5 +1,5 @@
-import { Hero } from '@/components/aigc/Hero';
-import { EduShell } from '@/components/aigc/EduShell';
+import { Hero } from '@/components/aigc/visual-lab/Hero';
+import { EduShell } from '@/components/aigc/visual-lab/EduShell';
 import {
   CasesSection,
   EndorsementSection,
@@ -10,20 +10,20 @@ import {
   ModulesSection,
   PersonasSection,
   WorksSection,
-} from '@/components/aigc/sections';
+} from '@/components/aigc/visual-lab/sections';
 
-export default function AigcLandingPage() {
+export default function VisualLabLandingPage() {
   return (
     <EduShell>
-      <main>
+      <main id="main-content" className="aigc-training-page">
         <Hero />
         <MarqueeStrip />
         <ModulesSection />
         <PersonasSection />
-        <GainsSection />
-        <MentorsSection />
         <WorksSection />
         <CasesSection />
+        <MentorsSection />
+        <GainsSection />
         <EndorsementSection />
         <FinalCtaSection />
       </main>

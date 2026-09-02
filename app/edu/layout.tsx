@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/content/site";
 import { AIGC_MEDIA, aigcImageUrl } from "@/components/aigc/media";
 import "./aigc.css";
+import "./visual-lab.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

@@ -10,8 +10,11 @@ import { Nav } from './Nav';
  */
 export function EduShell({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`aigc-root ${className}`.trim()}>
+    <div className={`aigc-visual-root ${className}`.trim()}>
       <LeadProvider>
+        <a className="aigc-skip-link" href="#main-content">
+          跳到主要内容
+        </a>
         <Atmosphere />
         <Nav />
         {children}
