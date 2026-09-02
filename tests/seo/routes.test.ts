@@ -6,7 +6,7 @@ import { listTalentProfiles } from "@/lib/talent/queries";
 vi.mock("@/lib/cases/queries", () => ({ listCases: vi.fn() }));
 vi.mock("@/lib/talent/queries", () => ({ listTalentProfiles: vi.fn() }));
 
-it("publishes the static pages and every case detail page in the sitemap", async () => {
+it("publishes the static pages and every case and talent detail page in the sitemap", async () => {
   vi.mocked(listCases).mockResolvedValue([
     { id: "1", slug: "an-li-yi", title: "案例一", category: "宣传片", summary: "简介", detail: "详情", coverPath: "cover.png", createdAt: new Date("2026-01-01"), episodes: [] },
   ]);
@@ -31,19 +31,33 @@ it("publishes the static pages and every case detail page in the sitemap", async
     "http://localhost:3000/about",
     "http://localhost:3000/edu",
     "http://localhost:3000/edu/talent",
+    "http://localhost:3000/edu/visual-lab",
+    "http://localhost:3000/edu/visual-lab/talent",
     "http://localhost:3000/cases/an-li-yi",
     "http://localhost:3000/edu/talent/ouyang",
+    "http://localhost:3000/edu/visual-lab/talent/ouyang",
     "http://localhost:3000/edu/talent/lin-yifan",
+    "http://localhost:3000/edu/visual-lab/talent/lin-yifan",
     "http://localhost:3000/edu/talent/li-na",
+    "http://localhost:3000/edu/visual-lab/talent/li-na",
     "http://localhost:3000/edu/talent/wang-hao",
+    "http://localhost:3000/edu/visual-lab/talent/wang-hao",
     "http://localhost:3000/edu/talent/zhang-min",
+    "http://localhost:3000/edu/visual-lab/talent/zhang-min",
     "http://localhost:3000/edu/talent/liu-yang",
+    "http://localhost:3000/edu/visual-lab/talent/liu-yang",
     "http://localhost:3000/edu/talent/chen-jie",
+    "http://localhost:3000/edu/visual-lab/talent/chen-jie",
     "http://localhost:3000/edu/talent/yang-lei",
+    "http://localhost:3000/edu/visual-lab/talent/yang-lei",
     "http://localhost:3000/edu/talent/zhao-jing",
+    "http://localhost:3000/edu/visual-lab/talent/zhao-jing",
     "http://localhost:3000/edu/talent/huang-wei",
+    "http://localhost:3000/edu/visual-lab/talent/huang-wei",
     "http://localhost:3000/edu/talent/wu-ting",
+    "http://localhost:3000/edu/visual-lab/talent/wu-ting",
     "http://localhost:3000/edu/talent/zhou-peng",
+    "http://localhost:3000/edu/visual-lab/talent/zhou-peng",
   ]);
 });
 it("keeps API routes and the admin backend out of search results", () => expect(robots().rules).toEqual(expect.objectContaining({ disallow: ["/api/", "/admin"] })));
