@@ -15,15 +15,15 @@ import {
 export default function AigcLandingPage() {
   return (
     <EduShell>
-      <main>
+      <main id="main-content" className="aigc-training-page">
         <Hero />
         <MarqueeStrip />
         <ModulesSection />
         <PersonasSection />
-        <GainsSection />
-        <MentorsSection />
         <WorksSection />
         <CasesSection />
+        <MentorsSection />
+        <GainsSection />
         <EndorsementSection />
         <FinalCtaSection />
       </main>

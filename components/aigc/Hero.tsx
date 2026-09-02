@@ -1,16 +1,15 @@
 'use client';
 
+import { Pause, Play, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { HERO } from './content';
 import { CtaButton } from './LeadProvider';
 import { AIGC_MEDIA, aigcImageUrl } from './media';
 
 export function Hero() {
-  const mediaRef = useRef<HTMLDivElement | null>(null);
-  const bodyRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  /** 省流量 / 降低动态偏好时只显示 poster，不加载视频 */
   const [playVideo, setPlayVideo] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
@@ -19,96 +18,115 @@ export function Hero() {
     setPlayVideo(true);
   }, []);
 
-  const ensurePlayback = () => {
+  const startPlayback = () => {
     const video = videoRef.current;
     if (!video) return;
     video.defaultMuted = true;
     video.muted = true;
-    void video.play().catch(() => undefined);
+    void video.play()
+      .then(() => setIsPlaying(true))
+      .catch(() => setIsPlaying(false));
   };
 
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const y = window.scrollY;
-        if (y > window.innerHeight * 1.2) return;
-        if (mediaRef.current) {
-          mediaRef.current.style.transform = `translate3d(0, ${y * 0.24}px, 0)`;
-        }
-        if (bodyRef.current) {
-          bodyRef.current.style.transform = `translate3d(0, ${y * -0.06}px, 0)`;
-          bodyRef.current.style.opacity = String(Math.max(0, 1 - y / (window.innerHeight * 0.75)));
-        }
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      startPlayback();
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
 
   return (
-    <section className="aigc-hero" id="top">
-      <div className="aigc-hero__media" ref={mediaRef}>
-        {playVideo ? (
-          <video
-            ref={videoRef}
-            src="/api/aigc/hero-video"
-            poster={aigcImageUrl(AIGC_MEDIA.heroPosterPath)}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            onCanPlay={ensurePlayback}
-          />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={aigcImageUrl(AIGC_MEDIA.heroPosterPath)} alt="" />
-        )}
-        <div className="aigc-hero__scrim" />
-      </div>
-
+    <section className="aigc-hero" id="top" aria-labelledby="aigc-hero-title">
       <div className="aigc-shell">
-        <div className="aigc-hero__body" ref={bodyRef}>
-          <div
-            className="aigc-hero__brandline"
-            aria-label={`${HERO.title} × ${HERO.partner}`}
-          >
-            <span className="aigc-hero__brand-name">{HERO.title} × {HERO.partner}</span>
+        <div className="aigc-hero__grid">
+          <div className="aigc-hero__copy">
+            <div className="aigc-hero__meta">
+              <span className="aigc-section-index">EDU / VISUAL LAB / 00</span>
+              <span className="aigc-status">ARCHIVE OPEN</span>
+            </div>
+
+            <p className="aigc-hero__brandline">{HERO.title} <span aria-hidden="true">×</span> {HERO.partner}</p>
+            <h1 id="aigc-hero-title" className="aigc-hero__title">
+              <small>31 DAYS / AI CONTENT FIELD LAB</small>
+              <span>31 天线下 AIGC</span>
+              <span>影视内容商业实训营</span>
+            </h1>
+            <p className="aigc-hero__tag">{HERO.tagline}</p>
+            <p className="aigc-hero__proof">{HERO.proof}</p>
+
+            <div className="aigc-hero__cta">
+              <CtaButton source="kit">免费领取实训资料包</CtaButton>
+              <CtaButton source="openclass" variant="ghost">预约公开课</CtaButton>
+            </div>
+
+            <div className="aigc-hero__proofline" aria-label="实训档案摘要">
+              <span><strong>31</strong> 天连续训练</span>
+              <span><strong>07</strong> 个交付模块</span>
+              <span><strong>01</strong> 套完整作品集</span>
+            </div>
           </div>
 
-          <h1 className="aigc-hero__title aigc-hero__title--program">
-            {Array.from(HERO.sub).map((ch, i) => (
-              <span
-                className="ch"
-                key={`${ch}-${i}`}
-                style={{ animationDelay: `${160 + i * 34}ms` }}
-              >
-                {ch}
-              </span>
-            ))}
-          </h1>
+          <figure className="aigc-hero__stage">
+            <div className="aigc-stage-grid" aria-hidden="true" />
+            <div className="aigc-stage__topline">
+              <span>FIELD NOTE / 031</span>
+              <span>LIVE PROCESS / SELECT A PATH</span>
+            </div>
 
-          <p className="aigc-hero__tag">{HERO.tagline}</p>
-          <p className="aigc-hero__proof">{HERO.proof}</p>
+            <div className="aigc-stage__media">
+              {playVideo ? (
+                <video
+                  ref={videoRef}
+                  src="/api/aigc/hero-video"
+                  poster={aigcImageUrl(AIGC_MEDIA.heroPosterPath)}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  onCanPlay={startPlayback}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  aria-label="AIGC 影视内容商业实训现场视频"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={aigcImageUrl(AIGC_MEDIA.heroPosterPath)} alt="AIGC 影视内容商业实训现场" />
+              )}
+              <span className="aigc-stage__media-wash" aria-hidden="true" />
+              {playVideo && (
+                <div className="aigc-stage__controls">
+                  <button type="button" onClick={togglePlayback} aria-label={isPlaying ? '暂停 Hero 视频' : '播放 Hero 视频'}>
+                    {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                  </button>
+                  <span><VolumeX size={13} aria-hidden="true" /> SOUND OFF</span>
+                </div>
+              )}
+            </div>
 
-          <div className="aigc-hero__cta">
-            <CtaButton source="kit">免费领取实训资料包</CtaButton>
-            <CtaButton source="openclass" variant="ghost">
-              预约公开课
-            </CtaButton>
-          </div>
+            <div className="aigc-stage__route" aria-label="从输入到交付的训练路径">
+              <span className="aigc-stage__route-line" aria-hidden="true" />
+              <span className="aigc-stage__node aigc-stage__node--input"><b>01</b><small>INPUT</small></span>
+              <span className="aigc-stage__node aigc-stage__node--make"><b>02</b><small>MAKE</small></span>
+              <span className="aigc-stage__node aigc-stage__node--output"><b>03</b><small>OUTPUT</small></span>
+            </div>
+
+            <div className="aigc-stage__core">INPUT<br />TO OUTPUT</div>
+            <figcaption className="aigc-stage__caption">
+              <span><small>EDU / AIGC TRAINING</small><strong>输入 → 练习 → 交付</strong></span>
+              <b>31<small>DAYS</small></b>
+            </figcaption>
+          </figure>
         </div>
       </div>
-
-      <div className="aigc-hero__scroll" aria-hidden>
-        向下探索
-        <i />
-      </div>
+      <a className="aigc-hero__scroll" href="#modules">
+        <span>向下探索</span>
+        <i aria-hidden="true" />
+      </a>
     </section>
   );
 }

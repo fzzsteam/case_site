@@ -5,13 +5,12 @@
  */
 
 export const NAV_LINKS = [
-  { id: 'modules', label: '实训体系' },
-  { id: 'personas', label: '面向人群' },
-  { id: 'gains', label: '实践收获' },
-  { id: 'mentors', label: '导师阵容' },
-  { id: 'works', label: '学员案例' },
-  { id: 'cases', label: '就业去向' },
-  { id: 'endorsement', label: '企业实力' },
+  { id: 'modules', label: '训练路径' },
+  { id: 'works', label: '作品索引' },
+  { id: 'mentors', label: '导师档案' },
+  { id: 'cases', label: '就业结果' },
+  { id: 'gains', label: '结业权益' },
+  { id: 'endorsement', label: '企业背书' },
 ] as const;
 
 export const HERO = {

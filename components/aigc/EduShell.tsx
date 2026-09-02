@@ -12,6 +12,9 @@ export function EduShell({ children, className = '' }: { children: ReactNode; cl
   return (
     <div className={`aigc-root ${className}`.trim()}>
       <LeadProvider>
+        <a className="aigc-skip-link" href="#main-content">
+          跳到主要内容
+        </a>
         <Atmosphere />
         <Nav />
         {children}
