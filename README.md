@@ -70,7 +70,7 @@ Bucket 中所有对象保持私有。封面通过 `/api/media/image/[...path]` �
 3. 把该 IP 填进公众号后台的「IP 白名单」
 4. 在 `/admin/tokens` 新建一个 Token，复制接入命令到本地终端执行：
    ```bash
-   claude mcp add --transport http wechat https://video.fzzsai.com/api/mcp \
+   claude mcp add --transport http wechat https://www.fzzsai.com/api/mcp \
      --header "Authorization: Bearer <token>"
    ```
 

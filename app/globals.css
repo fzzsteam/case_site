@@ -379,6 +379,30 @@ body{font-family:var(--font-sans),"PingFang SC",sans-serif}.brand,.hero-copy h1,
 .case-detail-body{font-size:15px;line-height:2;color:var(--muted);white-space:pre-wrap}
 @media(max-width:900px){.case-detail-layout{grid-template-columns:1fr;gap:32px}.case-detail-page{padding:40px 0 90px}}
 
+/* SEO 内容区：让案例正文、事实字段、FAQ 与相关案例同时服务阅读和检索。 */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.case-detail-facts{display:grid;gap:0;margin:0 0 34px;border-top:1px solid #b8955138;border-bottom:1px solid #b8955138}
+.case-detail-facts div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:18px;padding:11px 0;border-bottom:1px solid #b8955124}
+.case-detail-facts div:last-child{border-bottom:0}
+.case-detail-facts dt{color:var(--gold);font-size:12px;letter-spacing:.08em}
+.case-detail-facts dd{margin:0;color:var(--text);font-size:13px;line-height:1.7}
+.case-detail-body{white-space:normal}
+.case-detail-body h2{font-family:var(--font-serif),"Songti SC",serif;font-size:22px;font-weight:500;color:var(--ink);margin:30px 0 10px}
+.case-detail-body h2:first-child{margin-top:0}
+.case-detail-body p{margin:0 0 16px}
+.case-detail-faq{margin-top:36px;padding-top:8px;border-top:1px solid #b8955138}
+.case-detail-faq dl{margin:0}
+.case-detail-faq dl>div{padding:13px 0;border-bottom:1px solid #b8955124}
+.case-detail-faq dt{font-size:14px;color:var(--text);font-weight:600}
+.case-detail-faq dd{margin:5px 0 0;font-size:14px;line-height:1.85;color:var(--muted)}
+.case-detail-related{margin-top:36px;padding-top:8px;border-top:1px solid #b8955138}
+.case-detail-related>div{display:grid;gap:8px}
+.case-detail-related a{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid #b8955124;background:#f8f3e84d;transition:border-color .2s,background .2s}
+.case-detail-related a:hover{border-color:#b8955177;background:#f8f3e8}
+.case-detail-related strong{font-size:14px;color:var(--ink);font-weight:500}
+.case-detail-related span{font-size:12px;line-height:1.65;color:var(--muted)}
+@media(max-width:620px){.case-detail-facts div{grid-template-columns:78px minmax(0,1fr);gap:12px}.case-detail-body h2{font-size:20px}}
+
 /* 关于我们下半区：服务在左，方案与报价在右。 */
 .closing-cta-layout{position:relative;z-index:1;width:100%;max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);gap:72px;align-items:center;text-align:left}
 .closing-cta-layout:before{content:"";position:absolute;top:-48px;left:50%;width:56px;height:1px;background:#b895517d;transform:translateX(-50%)}

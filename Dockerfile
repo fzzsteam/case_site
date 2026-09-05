@@ -10,7 +10,7 @@ FROM docker.m.daocloud.io/library/node:20-alpine AS builder
 WORKDIR /app
 
 # NEXT_PUBLIC_* 变量在构建期内联进产物，运行时改环境变量无效
-ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_SITE_URL=https://www.fzzsai.com
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 COPY --from=deps /app/node_modules ./node_modules

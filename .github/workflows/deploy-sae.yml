@@ -66,7 +66,7 @@ jobs:
           provenance: false
           sbom: false
           build-args: |
-            NEXT_PUBLIC_SITE_URL=https://video.fzzsai.com
+            NEXT_PUBLIC_SITE_URL=https://www.fzzsai.com
           tags: |
             crpi-7ajeyduewy90avu4.cn-shenzhen.personal.cr.aliyuncs.com/fzzs/case_site:latest
             crpi-7ajeyduewy90avu4.cn-shenzhen.personal.cr.aliyuncs.com/fzzs/case_site:${{ github.sha }}

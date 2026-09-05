@@ -1,3 +1,26 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/content/site";
-export default function robots():MetadataRoute.Robots{return{rules:{userAgent:"*",allow:"/",disallow:["/api/","/admin"]},sitemap:`${siteConfig.url.replace(/\/$/,"")}/sitemap.xml`};}
+
+const aiCrawlers = [
+  "OAI-SearchBot",
+  "GPTBot",
+  "ChatGPT-User",
+  "PerplexityBot",
+  "ClaudeBot",
+  "Claude-User",
+  "Google-Extended",
+  "Bytespider",
+  "DoubaoBot",
+  "YisouSpider",
+];
+
+export default function robots(): MetadataRoute.Robots {
+  const crawlRules = { allow: "/", disallow: ["/api/", "/admin"] };
+  return {
+    rules: [
+      { userAgent: "*", ...crawlRules },
+      ...aiCrawlers.map((userAgent) => ({ userAgent, ...crawlRules })),
+    ],
+    sitemap: `${siteConfig.url.replace(/\/$/, "")}/sitemap.xml`,
+  };
+}

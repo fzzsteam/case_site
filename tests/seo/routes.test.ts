@@ -60,4 +60,9 @@ it("publishes the static pages and every case and talent detail page in the site
     "http://localhost:3000/edu/visual-lab/talent/zhou-peng",
   ]);
 });
-it("keeps API routes and the admin backend out of search results", () => expect(robots().rules).toEqual(expect.objectContaining({ disallow: ["/api/", "/admin"] })));
+it("keeps API routes and the admin backend out of search results", () => {
+  expect(robots().rules).toEqual(expect.arrayContaining([
+    expect.objectContaining({ userAgent: "*", disallow: ["/api/", "/admin"] }),
+    expect.objectContaining({ userAgent: "OAI-SearchBot", allow: "/" }),
+  ]));
+});

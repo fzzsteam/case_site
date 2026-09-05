@@ -27,7 +27,7 @@ export function CaseDetailPlayer({ caseStudy }: { caseStudy: CaseStudy }) {
   return <div>
     <div className="case-detail-player">
       {videoUrl ? (
-        <video key={episode.id} src={videoUrl} controls autoPlay playsInline />
+        <video key={episode.id} src={videoUrl} controls autoPlay playsInline poster={caseCoverUrl(caseStudy.coverPath)} aria-label={`${caseStudy.title}视频播放`} />
       ) : (
         <button className="case-detail-poster" onClick={() => play(activeIndex)} disabled={state === "loading"}>
           <img src={caseCoverUrl(caseStudy.coverPath)} alt={`${caseStudy.title}封面`} />
