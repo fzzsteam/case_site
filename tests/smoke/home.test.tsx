@@ -59,7 +59,7 @@ it("renders the about section with company information and services under the ab
   expect(screen.getByRole("heading", { level: 2, name: "关于我们" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { level: 3, name: "公司简介" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { level: 3, name: "企业信息" })).toBeInTheDocument();
-  expect(screen.getByText(/深圳市方直智胜科技有限公司系A股上市公司方直科技/)).toBeInTheDocument();
+  expect(screen.getByText(/深圳市方直智胜科技有限公司是方直科技（股票代码：300235）旗下的 AI 内容公司/)).toBeInTheDocument();
   expect(screen.getByText("深圳市方直智胜科技有限公司")).toBeInTheDocument();
   expect(screen.getAllByText("深圳市南山区南头街道马家龙社区大新路198号创新大厦B栋901").length).toBeGreaterThan(0);
   expect(screen.queryByText("粤ICP备2026044251号")).not.toBeInTheDocument();

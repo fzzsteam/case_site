@@ -15,7 +15,7 @@ const aiCrawlers = [
 ];
 
 export default function robots(): MetadataRoute.Robots {
-  const crawlRules = { allow: "/", disallow: ["/api/", "/admin"] };
+  const crawlRules = { allow: ["/", "/api/media/image/"], disallow: ["/api/", "/admin"] };
   return {
     rules: [
       { userAgent: "*", ...crawlRules },
