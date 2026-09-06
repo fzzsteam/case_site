@@ -207,10 +207,22 @@ body{font-family:var(--font-sans),"PingFang SC",sans-serif}.brand,.hero-copy h1,
   .cases-chapter:before{height:210px}
 }
 
-/* Use the supplied raster logo in the header. */
-.brand{display:flex;align-items:center}
-.brand img{display:block;height:50px;width:auto;max-width:min(42vw,340px);object-fit:contain}
-@media(max-width:720px){.brand img{height:40px;max-width:48vw}}
+/* Use the supplied raster brand lockup in the header. */
+.brand{display:flex;align-items:center;min-width:0}
+.brand-lockup{--brand-main-logo-height:44px;--brand-parent-logo-height:21.5px;display:flex;align-items:center;gap:16px;min-width:0}
+.brand-parent{position:relative;display:block;flex:none;overflow:hidden}
+.brand-parent{width:107.3px;height:var(--brand-parent-logo-height)}
+.brand-parent img{position:absolute;left:-19.8px;top:-8.8px;display:block;width:146.8px;height:auto;max-width:none;filter:brightness(0) saturate(100%) invert(21%) sepia(24%) saturate(806%) hue-rotate(121deg) brightness(92%) contrast(89%)}
+.brand-divider{width:1px;height:28px;background:#b8955188;flex:none}
+.brand-main{display:block;flex:none;height:var(--brand-main-logo-height)}
+.brand-main-logo{display:block;width:auto;height:var(--brand-main-logo-height);max-width:min(42vw,340px);object-fit:contain}
+@media(max-width:720px){
+  .brand-lockup{--brand-main-logo-height:36px;--brand-parent-logo-height:17.5px;gap:10px}
+  .brand-parent{width:87.3px}
+  .brand-parent img{left:-16.1px;top:-7.1px;width:119.5px}
+  .brand-divider{height:22px}
+  .brand-main-logo{max-width:48vw}
+}
 
 /* About section rebuilt as company profile + compact capabilities. */
 .about-chapter{background:linear-gradient(180deg,#f3eddf 0%,#f5efe3 52%,#f3eddf 100%);padding:92px 0 0;color:var(--text)}

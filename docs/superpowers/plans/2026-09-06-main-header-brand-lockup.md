@@ -4,7 +4,7 @@
 
 **Goal:** 在主站共享页眉中加入 EDU 站的方直智胜反白 Logo，并以“方直智胜背书 + 万象元生主品牌”的横向组合方式呈现。
 
-**Architecture:** 保留现有单一首页链接，将两个 Logo、分隔线和可读语义封装在同一个 `Link` 内。方直智胜反白资源放入深墨绿色底牌，万象元生继续使用现有主站 Logo；通过独立 CSS 类控制桌面端和移动端尺寸，避免现有 `.brand img` 统一高度规则影响两个 Logo。
+**Architecture:** 保留现有单一首页链接，将两个 Logo、分隔线和可读语义封装在同一个 `Link` 内。方直智胜使用 EDU 站原始反白资源并通过 CSS 滤镜转换为深墨绿色，不添加背景框或底色，万象元生继续使用现有主站 Logo；针对两张 PNG 自带透明留白的问题，在页眉使用裁切显示窗口让目标尺寸对应可见图形，不改动原始图片文件。
 
 **Tech Stack:** Next.js 16、React 19、TypeScript、CSS、Vitest、Testing Library。
 
@@ -15,7 +15,7 @@
 - Create: `docs/superpowers/specs/2026-09-06-main-header-brand-lockup-design.md`（已提交，记录品牌层级和视觉决策）
 - Create: `docs/superpowers/plans/2026-09-06-main-header-brand-lockup.md`（本实现计划）
 - Modify: `components/layout/site-header.tsx`（主站页眉 Logo 组合与无障碍名称）
-- Modify: `app/globals.css`（Logo 组合布局、底牌、分隔线和响应式尺寸）
+- Modify: `app/globals.css`（Logo 组合布局、透明留白裁切、分隔线和响应式尺寸）
 - Modify: `tests/components/site-header.test.tsx`（验证首页链接语义和两个 Logo 资源）
 
 ### Task 1: 先更新页眉行为测试
@@ -116,17 +116,18 @@ Expected: PASS；Logo 资源、首页链接语义和原有移动菜单行为均�
 ```css
 /* Use the supplied raster brand lockup in the header. */
 .brand{display:flex;align-items:center;min-width:0}
-.brand-lockup{display:flex;align-items:center;gap:16px;min-width:0}
-.brand-parent{display:flex;align-items:center;flex:none;height:24px;padding:4px 8px;border-radius:2px;background:var(--ink)}
-.brand-parent img{display:block;width:auto;height:16px;max-width:94px;object-fit:contain}
+.brand-lockup{--brand-main-logo-height:44px;--brand-parent-logo-height:21.5px;display:flex;align-items:center;gap:16px;min-width:0}
+.brand-parent{position:relative;display:block;flex:none;width:107.3px;height:var(--brand-parent-logo-height);overflow:hidden}
+.brand-parent img{position:absolute;left:-19.8px;top:-8.8px;display:block;width:146.8px;height:auto;max-width:none;filter:brightness(0) saturate(100%) invert(21%) sepia(24%) saturate(806%) hue-rotate(121deg) brightness(92%) contrast(89%)}
 .brand-divider{width:1px;height:28px;background:#b8955188;flex:none}
-.brand-main-logo{display:block;width:auto;height:44px;max-width:min(42vw,340px);object-fit:contain}
+.brand-main{display:block;flex:none;height:var(--brand-main-logo-height)}
+.brand-main-logo{display:block;width:auto;height:var(--brand-main-logo-height);max-width:min(42vw,340px);object-fit:contain}
 @media(max-width:720px){
-  .brand-lockup{gap:10px}
-  .brand-parent{height:20px;padding:3px 6px}
-  .brand-parent img{height:14px;max-width:78px}
+  .brand-lockup{--brand-main-logo-height:36px;--brand-parent-logo-height:17.5px;gap:10px}
+  .brand-parent{width:87.3px}
+  .brand-parent img{left:-16.1px;top:-7.1px;width:119.5px}
   .brand-divider{height:22px}
-  .brand-main-logo{height:36px;max-width:48vw}
+  .brand-main-logo{max-width:48vw}
 }
 ```
 
@@ -172,5 +173,4 @@ git add components/layout/site-header.tsx app/globals.css tests/components/site-
 git commit -m "feat: add endorsed brand lockup to main header"
 ```
 
-Expected: 只提交页眉组件、样式和测试三个文件；未跟踪的 `AGENTS.md` 保持不变。
-
+Expected: 只提交页眉组件、样式、测试和对应说明文件；未跟踪的 `AGENTS.md` 保持不变。
