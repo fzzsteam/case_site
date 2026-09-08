@@ -24,7 +24,7 @@ const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { text: string; border: strin
 };
 
 const BRIEFING_MASTHEAD_GIF_URL =
-  "https://mmbiz.qpic.cn/mmbiz_gif/oxSgVIWJxzhusGlN9hTDLEIwLbXZxOx9ZgHEOtRrPoZVI6nrHjvg2aPtlNQGeQiaK0VuWkgwBB1oXpGDqnmgibsyJDJpPsgrib0U6tUHXBjXZQ/640?wx_fmt=gif&from=appmsg";
+  "https://mmbiz.qpic.cn/mmbiz_gif/oxSgVIWJxzia4OzMKDJSr0p57E9Fia1M1lTQX0lWvI3cclfp4ibeJAy9ZgdhjibdSkrZF4KjEVGaO13RO7xDOhSb7PwJvY9MA0DXTWDtXriblZ7A/640?wx_fmt=gif&from=appmsg";
 
 const articleShape = {
   title: z.string().trim().min(1).max(64),
