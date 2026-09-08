@@ -241,6 +241,7 @@ describe("wechat_create_draft", () => {
         content: "<p>正文</p>",
         cover: "wxmedia:thumb-1",
         theme: "signal",
+        masthead: "科技观察 / AI 行业",
       }),
     );
 
@@ -249,8 +250,7 @@ describe("wechat_create_draft", () => {
     expect(submitted).not.toHaveProperty("theme");
     expect(submitted.content).toContain("background:#e9e5f4");
     expect(submitted.content).toContain("background:#fbfaff");
-    expect(submitted.content).toContain("栏目资讯");
-    expect(submitted.content).toContain("即时更新");
+    expect(submitted.content).toContain("科技观察 / AI 行业");
     expect(submitted.content).toContain("<p>正文</p>");
     expect(submitted.content).not.toContain("Render output / inline styles");
     expect(submitted.content).not.toContain("source locked");
@@ -265,6 +265,17 @@ describe("wechat_create_draft", () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
+  it("未传主题时默认使用 briefing", async () => {
+    vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-theme-default" });
+
+    await call("wechat_create_draft", { title: "标题", content: "<p>正文</p>", cover: "wxmedia:t" });
+
+    const submitted = vi.mocked(createDraft).mock.calls[0][0];
+    expect(submitted.content).toContain("background:#e9eef5");
+    expect(submitted.content).toContain("今日简报");
+    expect(submitted.content).toContain("行业动态");
+  });
+
   it("用封面句柄建草稿时不再重复上传封面", async () => {
     vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-1" });
 
@@ -272,7 +283,8 @@ describe("wechat_create_draft", () => {
 
     expect(data.media_id).toBe("draft-1");
     expect(uploadThumbMaterial).not.toHaveBeenCalled();
-    expect(vi.mocked(createDraft).mock.calls[0][0]).toMatchObject({ title: "标题", content: "<p>正文</p>", thumbMediaId: "thumb-1" });
+    expect(vi.mocked(createDraft).mock.calls[0][0]).toMatchObject({ title: "标题", thumbMediaId: "thumb-1" });
+    expect(vi.mocked(createDraft).mock.calls[0][0].content).toContain("<p>正文</p>");
   });
 
   it("封面给网址时由服务端代抓再转投微信", async () => {
@@ -293,7 +305,7 @@ describe("wechat_create_draft", () => {
     const { data } = resultPayload(await call("wechat_create_draft", { title: "标题", content: '<img src="https://cdn.example.com/a.png">', cover: "wxmedia:t" }));
 
     expect(data.uploaded_images).toBe(1);
-    expect(vi.mocked(createDraft).mock.calls[0][0]).toMatchObject({ content: '<img src="https://mmbiz.qpic.cn/x">' });
+    expect(vi.mocked(createDraft).mock.calls[0][0].content).toContain('<img src="https://mmbiz.qpic.cn/x">');
   });
 
   it("封面传本地路径时引导 agent 走上传流程", async () => {

@@ -20,13 +20,13 @@ type ArticleThemeId = (typeof ARTICLE_THEME_IDS)[number];
 const articleThemeSchema = z.enum(ARTICLE_THEME_IDS);
 
 const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { canvas: string; surface: string; text: string; border: string; accent: string; label: string; section: string }> = {
-  editorial: { canvas: "#eee8dd", surface: "#fbf8f2", text: "#2c2926", border: "#d8c9b8", accent: "#a33a2b", label: "编辑部", section: "深度观察" },
-  briefing: { canvas: "#e9eef5", surface: "#ffffff", text: "#17243a", border: "#cbd6e5", accent: "#2457c5", label: "每日简报", section: "行业资讯" },
-  field: { canvas: "#f1e9dd", surface: "#fffaf2", text: "#25221f", border: "#e3cbb7", accent: "#d65d2f", label: "现场记录", section: "城市观察" },
-  night: { canvas: "#dbe2eb", surface: "#111c2b", text: "#e8eef6", border: "#34506c", accent: "#74b9ff", label: "夜间通讯", section: "专题长文" },
-  financial: { canvas: "#f1e4de", surface: "#fff7f1", text: "#2c1f28", border: "#dfc3c4", accent: "#8d2146", label: "数据观察", section: "商业资讯" },
-  magazine: { canvas: "#e8e6df", surface: "#fcfbf6", text: "#171717", border: "#bdbcb5", accent: "#171717", label: "特稿栏目", section: "文化观察" },
-  signal: { canvas: "#e9e5f4", surface: "#fbfaff", text: "#1b1630", border: "#d0c4f1", accent: "#6c43d9", label: "栏目资讯", section: "即时更新" },
+  editorial: { canvas: "#eee8dd", surface: "#fbf8f2", text: "#2c2926", border: "#d8c9b8", accent: "#a33a2b", label: "专题报道", section: "深度阅读" },
+  briefing: { canvas: "#e9eef5", surface: "#ffffff", text: "#17243a", border: "#cbd6e5", accent: "#2457c5", label: "今日简报", section: "行业动态" },
+  field: { canvas: "#f1e9dd", surface: "#fffaf2", text: "#25221f", border: "#e3cbb7", accent: "#d65d2f", label: "现场记录", section: "一线观察" },
+  night: { canvas: "#dbe2eb", surface: "#111c2b", text: "#e8eef6", border: "#34506c", accent: "#74b9ff", label: "夜间阅读", section: "专题长文" },
+  financial: { canvas: "#f1e4de", surface: "#fff7f1", text: "#2c1f28", border: "#dfc3c4", accent: "#8d2146", label: "数据报告", section: "商业观察" },
+  magazine: { canvas: "#e8e6df", surface: "#fcfbf6", text: "#171717", border: "#bdbcb5", accent: "#171717", label: "人物特稿", section: "文化现场" },
+  signal: { canvas: "#e9e5f4", surface: "#fbfaff", text: "#1b1630", border: "#d0c4f1", accent: "#6c43d9", label: "栏目精选", section: "即时资讯" },
 };
 
 const articleShape = {
@@ -40,7 +40,11 @@ const articleShape = {
   only_fans_can_comment: z.boolean().optional(),
 };
 
-const createDraftSchema = z.object({ ...articleShape, theme: articleThemeSchema.optional() });
+const createDraftSchema = z.object({
+  ...articleShape,
+  theme: articleThemeSchema.optional(),
+  masthead: z.string().trim().max(80).optional(),
+});
 const updateDraftSchema = z.object({ ...articleShape, media_id: z.string().trim().min(1), index: z.number().int().min(0).optional() });
 const createMultiDraftSchema = z
   .object({
@@ -78,9 +82,12 @@ function requiredMassMediaId(value: string | undefined, msgtype: string): string
   return normalized;
 }
 
-function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined): string {
-  if (!themeId) return content;
-  const theme = ARTICLE_THEME_STYLES[themeId];
+function escapeMasthead(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
+}
+
+function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined, mastheadInput: string | undefined): string {
+  const theme = ARTICLE_THEME_STYLES[themeId ?? "briefing"];
   const outerStyle = [
     "width:100%",
     "box-sizing:border-box",
@@ -120,7 +127,9 @@ function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined)
     "line-height:1.5",
   ].join(";");
   const sectionStyle = ["color:inherit", "font-weight:500", "letter-spacing:0.06em", "opacity:0.62"].join(";");
-  const masthead = `<div style="${mastheadStyle}"><span>${theme.label}</span><span style="${sectionStyle}">${theme.section}</span></div>`;
+  const masthead = mastheadInput
+    ? `<div style="${mastheadStyle}"><span>${escapeMasthead(mastheadInput)}</span></div>`
+    : `<div style="${mastheadStyle}"><span>${theme.label}</span><span style="${sectionStyle}">${theme.section}</span></div>`;
   return `<section style="${outerStyle}"><div style="${innerStyle}">${masthead}${content}</div></section>`;
 }
 
@@ -270,7 +279,11 @@ const CREATE_ARTICLE_PROPERTIES = {
   theme: {
     type: "string",
     enum: [...ARTICLE_THEME_IDS],
-    description: "文章排版主题。传入后会把主题画布、留白和文章纸张样式写入正文 HTML；不传则保持原正文。不会改变草稿创建、发布或群发流程。",
+    description: "文章排版主题，可选；不传时默认使用 briefing。主题画布、留白和文章纸张样式会写入正文 HTML，不改变草稿创建、发布或群发流程。",
+  },
+  masthead: {
+    type: "string",
+    description: "文章顶部刊头文案，可选；建议传入类似“科技观察 / AI 行业”的短文案。不传时使用主题默认刊头。",
   },
 } as const;
 
@@ -320,7 +333,7 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: { type: "object", properties: CREATE_ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
     handler: async (args) => {
       const input = createDraftSchema.parse(args);
-      const { article, uploadedCount } = await buildArticle({ ...input, content: applyArticleTheme(input.content, input.theme) });
+      const { article, uploadedCount } = await buildArticle({ ...input, content: applyArticleTheme(input.content, input.theme, input.masthead) });
       const { media_id } = await createDraft(article);
       return { media_id, uploaded_images: uploadedCount, note: "草稿已创建，可在微信公众平台后台预览。发布需另外调用 wechat_publish_draft。" };
     },
