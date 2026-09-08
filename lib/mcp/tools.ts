@@ -15,6 +15,9 @@ import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
 import { COVER_HANDLE_PREFIX } from "./refs";
 
+const ARTICLE_THEME_IDS = ["editorial", "briefing", "field", "night", "financial", "magazine", "signal"] as const;
+const articleThemeSchema = z.enum(ARTICLE_THEME_IDS);
+
 const articleShape = {
   title: z.string().trim().min(1).max(64),
   content: z.string().min(1),
@@ -26,7 +29,7 @@ const articleShape = {
   only_fans_can_comment: z.boolean().optional(),
 };
 
-const createDraftSchema = z.object(articleShape);
+const createDraftSchema = z.object({ ...articleShape, theme: articleThemeSchema.optional() });
 const updateDraftSchema = z.object({ ...articleShape, media_id: z.string().trim().min(1), index: z.number().int().min(0).optional() });
 const createMultiDraftSchema = z
   .object({
@@ -205,6 +208,15 @@ const ARTICLE_PROPERTIES = {
   only_fans_can_comment: { type: "boolean", description: "是否仅粉丝可评论，默认 false。" },
 } as const;
 
+const CREATE_ARTICLE_PROPERTIES = {
+  ...ARTICLE_PROPERTIES,
+  theme: {
+    type: "string",
+    enum: [...ARTICLE_THEME_IDS],
+    description: "文章排版主题，仅用于排版选择，不改变草稿创建、发布或群发流程。",
+  },
+} as const;
+
 export type ToolDefinition = {
   name: string;
   description: string;
@@ -248,7 +260,7 @@ export const TOOLS: ToolDefinition[] = [
     name: "wechat_create_draft",
     description:
       "在公众号草稿箱里新建一篇图文草稿。正文用 HTML；服务端会自动把正文里非微信域名的图片转投到微信并回填地址（否则微信会静默丢弃，读者看到空白）。返回 media_id，后续可用于 wechat_update_draft / wechat_publish_draft。此操作不会推送给粉丝。",
-    inputSchema: { type: "object", properties: ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
+    inputSchema: { type: "object", properties: CREATE_ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
     handler: async (args) => {
       const input = createDraftSchema.parse(args);
       const { article, uploadedCount } = await buildArticle(input);

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Clapperboard, KeyRound, LogOut, Menu, Newspaper, Settings, Tags, Users, X } from "lucide-react";
+import { Clapperboard, KeyRound, LogOut, Menu, Settings, Tags, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,7 +10,6 @@ const navItems = [
   { href: "/admin/talents", label: "人才集市", icon: Users },
   { href: "/admin/categories", label: "分类管理", icon: Tags },
   { href: "/admin/tokens", label: "MCP Token", icon: KeyRound },
-  { href: "/admin/article-themes", label: "文章排版", icon: Newspaper },
   { href: "/admin/settings", label: "账号设置", icon: Settings },
 ];
 

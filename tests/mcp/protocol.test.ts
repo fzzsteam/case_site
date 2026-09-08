@@ -232,6 +232,31 @@ describe("wechat_create_upload_url", () => {
 });
 
 describe("wechat_create_draft", () => {
+  it("接受可选排版主题，但不改变微信草稿请求参数", async () => {
+    vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-theme-1" });
+
+    const { data } = resultPayload(
+      await call("wechat_create_draft", {
+        title: "标题",
+        content: "<p>正文</p>",
+        cover: "wxmedia:thumb-1",
+        theme: "editorial",
+      }),
+    );
+
+    expect(data.media_id).toBe("draft-theme-1");
+    expect(vi.mocked(createDraft).mock.calls[0][0]).not.toHaveProperty("theme");
+  });
+
+  it("排版主题必须使用约定的主题 ID", async () => {
+    const message = errorText(
+      await call("wechat_create_draft", { title: "标题", content: "<p>正文</p>", cover: "wxmedia:t", theme: "unknown" }),
+    );
+
+    expect(message).toContain("参数不合法");
+    expect(createDraft).not.toHaveBeenCalled();
+  });
+
   it("用封面句柄建草稿时不再重复上传封面", async () => {
     vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-1" });
 
