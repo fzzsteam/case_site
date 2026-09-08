@@ -16,7 +16,18 @@ import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
 import { COVER_HANDLE_PREFIX } from "./refs";
 
 const ARTICLE_THEME_IDS = ["editorial", "briefing", "field", "night", "financial", "magazine", "signal"] as const;
+type ArticleThemeId = (typeof ARTICLE_THEME_IDS)[number];
 const articleThemeSchema = z.enum(ARTICLE_THEME_IDS);
+
+const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { canvas: string; surface: string; text: string; border: string; accent: string; label: string; section: string }> = {
+  editorial: { canvas: "#eee8dd", surface: "#fbf8f2", text: "#2c2926", border: "#d8c9b8", accent: "#a33a2b", label: "编辑部", section: "深度观察" },
+  briefing: { canvas: "#e9eef5", surface: "#ffffff", text: "#17243a", border: "#cbd6e5", accent: "#2457c5", label: "每日简报", section: "行业资讯" },
+  field: { canvas: "#f1e9dd", surface: "#fffaf2", text: "#25221f", border: "#e3cbb7", accent: "#d65d2f", label: "现场记录", section: "城市观察" },
+  night: { canvas: "#dbe2eb", surface: "#111c2b", text: "#e8eef6", border: "#34506c", accent: "#74b9ff", label: "夜间通讯", section: "专题长文" },
+  financial: { canvas: "#f1e4de", surface: "#fff7f1", text: "#2c1f28", border: "#dfc3c4", accent: "#8d2146", label: "数据观察", section: "商业资讯" },
+  magazine: { canvas: "#e8e6df", surface: "#fcfbf6", text: "#171717", border: "#bdbcb5", accent: "#171717", label: "特稿栏目", section: "文化观察" },
+  signal: { canvas: "#e9e5f4", surface: "#fbfaff", text: "#1b1630", border: "#d0c4f1", accent: "#6c43d9", label: "栏目资讯", section: "即时更新" },
+};
 
 const articleShape = {
   title: z.string().trim().min(1).max(64),
@@ -65,6 +76,52 @@ function requiredMassMediaId(value: string | undefined, msgtype: string): string
   const normalized = mediaId.startsWith(COVER_HANDLE_PREFIX) ? mediaId.slice(COVER_HANDLE_PREFIX.length).trim() : mediaId;
   if (!normalized) throw new Error(`msgtype=${msgtype} 时 media_id 不能为空。`);
   return normalized;
+}
+
+function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined): string {
+  if (!themeId) return content;
+  const theme = ARTICLE_THEME_STYLES[themeId];
+  const outerStyle = [
+    "width:100%",
+    "box-sizing:border-box",
+    "margin:0",
+    "padding:24px 16px",
+    `background:${theme.canvas}`,
+    `color:${theme.text}`,
+    'font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
+    "font-size:15px",
+    "line-height:1.9",
+    "word-break:break-word",
+  ].join(";");
+  const innerStyle = [
+    "width:100%",
+    "max-width:677px",
+    "box-sizing:border-box",
+    "margin:0 auto",
+    "padding:30px 24px 42px",
+    `background:${theme.surface}`,
+    `color:${theme.text}`,
+    `border:1px solid ${theme.border}`,
+    "box-shadow:0 12px 30px rgba(15,23,42,0.12)",
+  ].join(";");
+  const mastheadStyle = [
+    "display:flex",
+    "align-items:center",
+    "justify-content:space-between",
+    "gap:12px",
+    "margin:0 0 22px",
+    "padding:0 0 12px",
+    `border-bottom:1px solid ${theme.border}`,
+    `color:${theme.accent}`,
+    'font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
+    "font-size:11px",
+    "font-weight:700",
+    "letter-spacing:0.12em",
+    "line-height:1.5",
+  ].join(";");
+  const sectionStyle = ["color:inherit", "font-weight:500", "letter-spacing:0.06em", "opacity:0.62"].join(";");
+  const masthead = `<div style="${mastheadStyle}"><span>${theme.label}</span><span style="${sectionStyle}">${theme.section}</span></div>`;
+  return `<section style="${outerStyle}"><div style="${innerStyle}">${masthead}${content}</div></section>`;
 }
 
 function buildMassMessage(input: MassMessageInput): MassMessage {
@@ -213,7 +270,7 @@ const CREATE_ARTICLE_PROPERTIES = {
   theme: {
     type: "string",
     enum: [...ARTICLE_THEME_IDS],
-    description: "文章排版主题，仅用于排版选择，不改变草稿创建、发布或群发流程。",
+    description: "文章排版主题。传入后会把主题画布、留白和文章纸张样式写入正文 HTML；不传则保持原正文。不会改变草稿创建、发布或群发流程。",
   },
 } as const;
 
@@ -263,7 +320,7 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: { type: "object", properties: CREATE_ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
     handler: async (args) => {
       const input = createDraftSchema.parse(args);
-      const { article, uploadedCount } = await buildArticle(input);
+      const { article, uploadedCount } = await buildArticle({ ...input, content: applyArticleTheme(input.content, input.theme) });
       const { media_id } = await createDraft(article);
       return { media_id, uploaded_images: uploadedCount, note: "草稿已创建，可在微信公众平台后台预览。发布需另外调用 wechat_publish_draft。" };
     },

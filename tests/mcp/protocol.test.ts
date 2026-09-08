@@ -232,7 +232,7 @@ describe("wechat_create_upload_url", () => {
 });
 
 describe("wechat_create_draft", () => {
-  it("接受可选排版主题，但不改变微信草稿请求参数", async () => {
+  it("把排版主题写入正文外层，但不把主题字段传给微信", async () => {
     vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-theme-1" });
 
     const { data } = resultPayload(
@@ -240,12 +240,20 @@ describe("wechat_create_draft", () => {
         title: "标题",
         content: "<p>正文</p>",
         cover: "wxmedia:thumb-1",
-        theme: "editorial",
+        theme: "signal",
       }),
     );
 
     expect(data.media_id).toBe("draft-theme-1");
-    expect(vi.mocked(createDraft).mock.calls[0][0]).not.toHaveProperty("theme");
+    const submitted = vi.mocked(createDraft).mock.calls[0][0];
+    expect(submitted).not.toHaveProperty("theme");
+    expect(submitted.content).toContain("background:#e9e5f4");
+    expect(submitted.content).toContain("background:#fbfaff");
+    expect(submitted.content).toContain("栏目资讯");
+    expect(submitted.content).toContain("即时更新");
+    expect(submitted.content).toContain("<p>正文</p>");
+    expect(submitted.content).not.toContain("Render output / inline styles");
+    expect(submitted.content).not.toContain("source locked");
   });
 
   it("排版主题必须使用约定的主题 ID", async () => {
