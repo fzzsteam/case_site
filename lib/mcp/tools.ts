@@ -15,19 +15,16 @@ import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
 import { COVER_HANDLE_PREFIX } from "./refs";
 
-const ARTICLE_THEME_IDS = ["editorial", "briefing", "field", "night", "financial", "magazine", "signal"] as const;
+const ARTICLE_THEME_IDS = ["briefing"] as const;
 type ArticleThemeId = (typeof ARTICLE_THEME_IDS)[number];
 const articleThemeSchema = z.enum(ARTICLE_THEME_IDS);
 
-const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { canvas: string; surface: string; text: string; border: string; accent: string; label: string; section: string }> = {
-  editorial: { canvas: "#eee8dd", surface: "#fbf8f2", text: "#2c2926", border: "#d8c9b8", accent: "#a33a2b", label: "专题报道", section: "深度阅读" },
-  briefing: { canvas: "#e9eef5", surface: "#ffffff", text: "#17243a", border: "#cbd6e5", accent: "#2457c5", label: "今日简报", section: "行业动态" },
-  field: { canvas: "#f1e9dd", surface: "#fffaf2", text: "#25221f", border: "#e3cbb7", accent: "#d65d2f", label: "现场记录", section: "一线观察" },
-  night: { canvas: "#dbe2eb", surface: "#111c2b", text: "#e8eef6", border: "#34506c", accent: "#74b9ff", label: "夜间阅读", section: "专题长文" },
-  financial: { canvas: "#f1e4de", surface: "#fff7f1", text: "#2c1f28", border: "#dfc3c4", accent: "#8d2146", label: "数据报告", section: "商业观察" },
-  magazine: { canvas: "#e8e6df", surface: "#fcfbf6", text: "#171717", border: "#bdbcb5", accent: "#171717", label: "人物特稿", section: "文化现场" },
-  signal: { canvas: "#e9e5f4", surface: "#fbfaff", text: "#1b1630", border: "#d0c4f1", accent: "#6c43d9", label: "栏目精选", section: "即时资讯" },
+const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { text: string; border: string; accent: string }> = {
+  briefing: { text: "rgba(0,0,0,0.9)", border: "#eeeeee", accent: "#00427b" },
 };
+
+const BRIEFING_MASTHEAD_GIF_URL =
+  "https://mmbiz.qpic.cn/mmbiz_gif/oxSgVIWJxzhusGlN9hTDLEIwLbXZxOx9ZgHEOtRrPoZVI6nrHjvg2aPtlNQGeQiaK0VuWkgwBB1oXpGDqnmgibsyJDJpPsgrib0U6tUHXBjXZQ/640?wx_fmt=gif&from=appmsg";
 
 const articleShape = {
   title: z.string().trim().min(1).max(64),
@@ -86,51 +83,225 @@ function escapeMasthead(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
 }
 
+const LEGACY_MASTHEAD_TEXTS = new Set([
+  "renderoutputinlinestyles",
+  "editorialsourcelocked",
+  "专题报道深度阅读",
+  "今日简报行业动态",
+  "现场记录一线观察",
+  "夜间阅读专题长文",
+  "数据报告商业观察",
+  "人物特稿文化现场",
+  "栏目精选即时资讯",
+]);
+
+function plainMarkupText(value: string): string {
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizedMarkupText(value: string): string {
+  return plainMarkupText(value).replace(/[\s/|｜·•—–-]+/g, "").toLowerCase();
+}
+
+function isArticleMetaParagraph(value: string): boolean {
+  const text = plainMarkupText(value);
+  if (!text || text.length > 100) return false;
+  return /(?:编辑|来源|作者|发布时间)\s*[:：]/.test(text) || /(?:19|20)\d{2}\s*(?:年|[./-])\s*\d{1,2}/.test(text) && /[·•|｜]/.test(text);
+}
+
+function stripLegacyMasthead(content: string): string {
+  let strippedMeta = false;
+  return content.replace(/<(p|div)\b[^>]*>([\s\S]*?)<\/\1>/gi, (full, _tagName, inner) => {
+    if (LEGACY_MASTHEAD_TEXTS.has(normalizedMarkupText(inner))) return "";
+    if (!strippedMeta && isArticleMetaParagraph(inner)) {
+      strippedMeta = true;
+      return "";
+    }
+    return full;
+  });
+}
+
+function mergeInlineStyles(existing: string, defaults: string, overrideProperties: string[] = []): string {
+  const declarations = existing
+    .split(";")
+    .map((declaration) => declaration.trim())
+    .filter(Boolean);
+  const overrides = new Set(overrideProperties.map((property) => property.toLowerCase()));
+  const retained = declarations.filter((declaration) => !overrides.has(declaration.split(":", 1)[0]?.trim().toLowerCase() ?? ""));
+  const properties = new Set(retained.map((declaration) => declaration.split(":", 1)[0]?.trim().toLowerCase()));
+  const additions = defaults
+    .split(";")
+    .map((declaration) => declaration.trim())
+    .filter((declaration) => declaration && !properties.has(declaration.split(":", 1)[0]?.trim().toLowerCase()));
+  return [...retained, ...additions].join(";");
+}
+
+function mergeTagStyleAttributes(attributes: string, defaults: string, overrideProperties: string[] = []): string {
+  const styleMatch = attributes.match(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/i);
+  const existing = styleMatch?.[2] ?? "";
+  const merged = mergeInlineStyles(existing, defaults, overrideProperties);
+  const withoutStyle = styleMatch ? attributes.replace(styleMatch[0], "") : attributes;
+  return withoutStyle + ' style="' + merged + '"';
+}
+
+function ensureInlineStyles(content: string, tagName: string, defaults: string, overrideProperties: string[] = []): string {
+  const tagPattern = new RegExp(`<${tagName}\\b([^>]*)>`, "gi");
+  return content.replace(tagPattern, (tag, attributes = "") => {
+    return `<${tagName}${mergeTagStyleAttributes(attributes, defaults, overrideProperties)}>`;
+  });
+}
+
+function normalizeParagraphStyles(content: string, theme: (typeof ARTICLE_THEME_STYLES)[ArticleThemeId], fontFamily: string): string {
+  const bodyStyle = `margin:0 8px 1em;${fontFamily};font-size:15px;line-height:1.75em;color:${theme.text};text-align:left;font-style:normal`;
+  const headingStyle = `margin:1.75em 8px 0.75em;${fontFamily};font-size:16px;line-height:1.75em;font-weight:700;color:${theme.text};text-align:center;font-style:normal`;
+  const captionStyle = `margin:0 8px 1em;${fontFamily};font-size:12px;line-height:1.6;color:#888;text-align:center;font-style:italic`;
+  const centeredBodyStyle = `margin:0 8px 1em;${fontFamily};font-size:15px;line-height:1.75em;color:${theme.text};text-align:center;font-style:normal`;
+  const paragraphOverrides = [
+    "margin",
+    "padding",
+    "background",
+    "border",
+    "border-left",
+    "border-right",
+    "border-top",
+    "border-bottom",
+    "box-shadow",
+    "font-family",
+    "font-size",
+    "line-height",
+    "font-weight",
+    "letter-spacing",
+    "text-align",
+    "color",
+    "font-style",
+  ];
+
+  return content.replace(/<p\b([^>]*)>([\s\S]*?)<\/p>/gi, (full, attributes = "", inner = "") => {
+    if (!plainMarkupText(inner)) return "";
+    const style = attributes.match(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/i)?.[2] ?? "";
+    const signals = `${style} ${inner}`;
+    const isCaption = /font-size\s*:\s*12px/i.test(signals) || /font-style\s*:\s*italic/i.test(signals);
+    const isCentered = /text-align\s*:\s*center/i.test(signals);
+    const isHeading = isCentered && (/<(?:strong|b)\b/i.test(inner) || /font-weight\s*:\s*(?:bold|[6-9]00)/i.test(signals) || /font-size\s*:\s*16px/i.test(signals));
+    const defaults = isCaption ? captionStyle : isHeading ? headingStyle : isCentered ? centeredBodyStyle : bodyStyle;
+    return `<p${mergeTagStyleAttributes(attributes, defaults, paragraphOverrides)}>${inner}</p>`;
+  });
+}
+
+function normalizeArticleContent(content: string, theme: (typeof ARTICLE_THEME_STYLES)[ArticleThemeId]): string {
+  let normalized = stripLegacyMasthead(content);
+  const sans = "font-family:mp-quote,PingFang SC,system-ui,-apple-system,BlinkMacSystemFont,Helvetica Neue,Hiragino Sans GB,Microsoft YaHei UI,Microsoft YaHei,Arial,sans-serif";
+  const code = "font-family:ui-monospace,SFMono-Regular,Menlo,monospace";
+  const typographyOverrides = ["font-family", "font-size", "line-height", "font-weight", "letter-spacing", "text-align", "color"];
+  const cleanLayoutOverrides = ["margin", "padding", "background", "border", "border-left", "border-right", "border-top", "border-bottom", "box-shadow", ...typographyOverrides];
+
+  normalized = normalizeParagraphStyles(normalized, theme, sans);
+  normalized = ensureInlineStyles(
+    normalized,
+    "h1",
+    `margin:1.5em 8px 1em;${sans};font-size:18px;line-height:1.6;font-weight:700;color:${theme.text};text-align:center`,
+    cleanLayoutOverrides,
+  );
+  normalized = ensureInlineStyles(
+    normalized,
+    "h2",
+    `margin:1.75em 8px 0.75em;${sans};font-size:16px;line-height:1.75em;font-weight:700;color:${theme.text};text-align:center`,
+    cleanLayoutOverrides,
+  );
+  normalized = ensureInlineStyles(
+    normalized,
+    "h3",
+    `margin:1.75em 8px 0.75em;${sans};font-size:16px;line-height:1.75em;font-weight:700;color:${theme.text};text-align:center`,
+    cleanLayoutOverrides,
+  );
+  normalized = ensureInlineStyles(
+    normalized,
+    "h4",
+    `margin:1.75em 8px 0.75em;${sans};font-size:16px;line-height:1.75em;font-weight:700;color:${theme.text};text-align:center`,
+    cleanLayoutOverrides,
+  );
+  normalized = ensureInlineStyles(
+    normalized,
+    "blockquote",
+    `box-sizing:border-box;margin:1.5em 8px;padding:0 0 0 1em;border-left:3px solid ${theme.accent};${sans};font-size:15px;line-height:1.75em;color:#666;text-align:left`,
+    ["box-sizing", "margin", "padding", "background", "border", "border-left", ...typographyOverrides],
+  );
+  normalized = ensureInlineStyles(normalized, "strong", `font-weight:700;color:${theme.accent}`, ["font-weight", "color"]);
+  normalized = ensureInlineStyles(normalized, "a", `color:${theme.accent};text-decoration:none`, ["color", "text-decoration"]);
+  normalized = ensureInlineStyles(
+    normalized,
+    "ul",
+    `margin:0 8px 1em;padding-left:1.5em;${sans};font-size:15px;line-height:1.75em;color:${theme.text};text-align:left`,
+    ["margin", "background", "border", "box-shadow", ...typographyOverrides],
+  );
+  normalized = ensureInlineStyles(
+    normalized,
+    "ol",
+    `margin:0 8px 1em;padding-left:1.5em;${sans};font-size:15px;line-height:1.75em;color:${theme.text};text-align:left`,
+    ["margin", "background", "border", "box-shadow", ...typographyOverrides],
+  );
+  normalized = ensureInlineStyles(normalized, "li", `margin:0 0 0.4em;${sans};font-size:15px;line-height:1.75em;color:${theme.text};text-align:left`, ["margin", "background", "border", "box-shadow", ...typographyOverrides]);
+  normalized = ensureInlineStyles(normalized, "hr", `border:0;border-top:1px solid ${theme.border};margin:2em 0`);
+  normalized = ensureInlineStyles(normalized, "img", "display:block;max-width:100%;height:auto;margin:1.5em auto");
+  normalized = ensureInlineStyles(
+    normalized,
+    "pre",
+    `box-sizing:border-box;overflow-x:auto;margin:1.5em 0;padding:1em 0 1em 1em;border-left:3px solid ${theme.accent};${code};font-size:14px;line-height:1.6;color:#243b53;white-space:pre-wrap;word-break:break-word`,
+    ["box-sizing", "margin", "padding", "background", "border", "border-left", "font-family", "font-size", "line-height", "color", "white-space", "word-break"],
+  );
+  normalized = ensureInlineStyles(normalized, "code", `${code};font-size:0.9em;line-height:1.6;color:inherit`, ["font-family", "font-size", "line-height", "color"]);
+  normalized = ensureInlineStyles(
+    normalized,
+    "table",
+    `width:100%;border-collapse:collapse;margin:1.5em 0;${sans};font-size:14px;line-height:1.6;color:${theme.text}`,
+    ["font-family", "font-size", "line-height", "color"],
+  );
+  normalized = ensureInlineStyles(normalized, "th", `padding:0.55em 0.5em;border-bottom:2px solid ${theme.border};font-weight:700;text-align:left`);
+  normalized = ensureInlineStyles(normalized, "td", `padding:0.55em 0.5em;border-bottom:1px solid ${theme.border};vertical-align:top`);
+  return normalized;
+}
+
 function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined, mastheadInput: string | undefined): string {
   const theme = ARTICLE_THEME_STYLES[themeId ?? "briefing"];
   const outerStyle = [
     "width:100%",
     "box-sizing:border-box",
     "margin:0",
-    "padding:24px 16px",
-    `background:${theme.canvas}`,
-    `color:${theme.text}`,
-    'font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
+    "padding:0 0 2em",
+    "color:" + theme.text,
+    "font-family:mp-quote,PingFang SC,system-ui,-apple-system,BlinkMacSystemFont,Helvetica Neue,Hiragino Sans GB,Microsoft YaHei UI,Microsoft YaHei,Arial,sans-serif",
     "font-size:15px",
-    "line-height:1.9",
+    "line-height:1.75em",
+    "text-align:left",
     "word-break:break-word",
-  ].join(";");
-  const innerStyle = [
-    "width:100%",
-    "max-width:677px",
-    "box-sizing:border-box",
-    "margin:0 auto",
-    "padding:30px 24px 42px",
-    `background:${theme.surface}`,
-    `color:${theme.text}`,
-    `border:1px solid ${theme.border}`,
-    "box-shadow:0 12px 30px rgba(15,23,42,0.12)",
+    "overflow-wrap:break-word",
   ].join(";");
   const mastheadStyle = [
-    "display:flex",
-    "align-items:center",
-    "justify-content:space-between",
-    "gap:12px",
-    "margin:0 0 22px",
-    "padding:0 0 12px",
-    `border-bottom:1px solid ${theme.border}`,
-    `color:${theme.accent}`,
-    'font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
-    "font-size:11px",
-    "font-weight:700",
-    "letter-spacing:0.12em",
-    "line-height:1.5",
+    "margin:0 8px",
+    "padding:0",
+    "color:#999",
+    "font-family:mp-quote,PingFang SC,system-ui,-apple-system,BlinkMacSystemFont,Helvetica Neue,Hiragino Sans GB,Microsoft YaHei UI,Microsoft YaHei,Arial,sans-serif",
+    "font-size:12px",
+    "font-weight:400",
+    "line-height:1.6",
+    "text-align:center",
   ].join(";");
-  const sectionStyle = ["color:inherit", "font-weight:500", "letter-spacing:0.06em", "opacity:0.62"].join(";");
   const masthead = mastheadInput
-    ? `<div style="${mastheadStyle}"><span>${escapeMasthead(mastheadInput)}</span></div>`
-    : `<div style="${mastheadStyle}"><span>${theme.label}</span><span style="${sectionStyle}">${theme.section}</span></div>`;
-  return `<section style="${outerStyle}"><div style="${innerStyle}">${masthead}${content}</div></section>`;
+    ? '<div style="' + mastheadStyle + '">' +
+      '<img src="' + BRIEFING_MASTHEAD_GIF_URL + '" alt="FzzsAI" style="display:block;width:100%;max-width:677px;height:auto;margin:0 auto 0.75em;border:0">' +
+      '<p style="margin:0;padding:0;color:#999;font-size:12px;line-height:1.6;text-align:center">' +
+      escapeMasthead(mastheadInput) +
+      "</p>" +
+      '<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;</p>' +
+      '<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;</p>' +
+      "</div>"
+    : "";
+  return '<section style="' + outerStyle + '">' + masthead + normalizeArticleContent(content, theme) + "</section>";
 }
 
 function buildMassMessage(input: MassMessageInput): MassMessage {
@@ -279,11 +450,11 @@ const CREATE_ARTICLE_PROPERTIES = {
   theme: {
     type: "string",
     enum: [...ARTICLE_THEME_IDS],
-    description: "文章排版主题，可选；不传时默认使用 briefing。主题画布、留白和文章纸张样式会写入正文 HTML，不改变草稿创建、发布或群发流程。",
+    description: "文章排版主题，可选；当前唯一主题为 briefing，不传时默认使用它。正文只写入可读性排版样式，不添加背景色、外框或阴影，也不改变草稿创建、发布或群发流程。",
   },
   masthead: {
     type: "string",
-    description: "文章顶部刊头文案，可选；建议传入类似“科技观察 / AI 行业”的短文案。不传时使用主题默认刊头。",
+    description: "文章顶部信息，可选；会引用公众号素材库中的 FzzsAI 动态 GIF，并按“编辑与来源 / 两行空白”的参考样式渲染。建议传入类似“编辑：方直AI　来源：公开资料”的短文案。不传时不显示信息栏。",
   },
 } as const;
 
@@ -329,7 +500,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_create_draft",
     description:
-      "在公众号草稿箱里新建一篇图文草稿。正文用 HTML；服务端会自动把正文里非微信域名的图片转投到微信并回填地址（否则微信会静默丢弃，读者看到空白）。返回 media_id，后续可用于 wechat_update_draft / wechat_publish_draft。此操作不会推送给粉丝。",
+      "在公众号草稿箱里新建一篇图文草稿。正文用 HTML；可用 theme=briefing 和 masthead 生成带素材库 GIF 刊头的资讯排版。服务端会自动把正文里非微信域名的图片转投到微信并回填地址（否则微信会静默丢弃，读者看到空白）。返回 media_id，后续可用于 wechat_update_draft / wechat_publish_draft。此操作不会推送给粉丝。",
     inputSchema: { type: "object", properties: CREATE_ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
     handler: async (args) => {
       const input = createDraftSchema.parse(args);

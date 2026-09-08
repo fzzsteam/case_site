@@ -238,9 +238,9 @@ describe("wechat_create_draft", () => {
     const { data } = resultPayload(
       await call("wechat_create_draft", {
         title: "标题",
-        content: "<p>正文</p>",
+        content: "<p>Render output / inline styles</p><p>editorial / source locked</p><p>方直AI · 2026年9月8日</p><h2 style=\"border-left:4px solid red;text-align:left\">小标题</h2><p style=\"background:#fff\">正文</p>",
         cover: "wxmedia:thumb-1",
-        theme: "signal",
+        theme: "briefing",
         masthead: "科技观察 / AI 行业",
       }),
     );
@@ -248,10 +248,25 @@ describe("wechat_create_draft", () => {
     expect(data.media_id).toBe("draft-theme-1");
     const submitted = vi.mocked(createDraft).mock.calls[0][0];
     expect(submitted).not.toHaveProperty("theme");
-    expect(submitted.content).toContain("background:#e9e5f4");
-    expect(submitted.content).toContain("background:#fbfaff");
+    expect(submitted.content).not.toContain("background:");
+    expect(submitted.content).not.toContain("box-shadow:");
+    expect(submitted.content).not.toContain("margin:0 -20px");
+    expect(submitted.content).toContain("font-size:15px;line-height:1.75em");
+    expect(submitted.content).toContain("font-family:mp-quote,PingFang SC,system-ui,-apple-system");
     expect(submitted.content).toContain("科技观察 / AI 行业");
-    expect(submitted.content).toContain("<p>正文</p>");
+    expect(submitted.content).toContain("FzzsAI");
+    expect(submitted.content).toContain('src="https://mmbiz.qpic.cn/mmbiz_gif/');
+    expect(submitted.content).toContain('alt="FzzsAI"');
+    expect(submitted.content).toContain("max-width:677px");
+    expect((submitted.content.match(/<p style=\"margin:0;line-height:1.75em;text-align:left\">&nbsp;<\/p>/g) ?? []).length).toBe(2);
+    expect(submitted.content).toContain("text-align:center");
+    expect(submitted.content).not.toContain("font-size:22px;font-weight:700");
+    expect(submitted.content).not.toContain("border-top:1px solid #eeeeee");
+    expect(submitted.content).not.toContain("Fzzs</span><span style=\"display:inline-block;color:#00427b\">AI");
+    expect(submitted.content).not.toContain("border-left:4px solid red");
+    expect(submitted.content).not.toContain("background:#fff");
+    expect(submitted.content).not.toContain("2026年9月8日");
+    expect(submitted.content).toContain(">正文</p>");
     expect(submitted.content).not.toContain("Render output / inline styles");
     expect(submitted.content).not.toContain("source locked");
   });
@@ -271,9 +286,10 @@ describe("wechat_create_draft", () => {
     await call("wechat_create_draft", { title: "标题", content: "<p>正文</p>", cover: "wxmedia:t" });
 
     const submitted = vi.mocked(createDraft).mock.calls[0][0];
-    expect(submitted.content).toContain("background:#e9eef5");
-    expect(submitted.content).toContain("今日简报");
-    expect(submitted.content).toContain("行业动态");
+    expect(submitted.content).not.toContain("background:");
+    expect(submitted.content).toContain("font-size:15px;line-height:1.75em");
+    expect(submitted.content).not.toContain("今日简报");
+    expect(submitted.content).not.toContain("行业动态");
   });
 
   it("用封面句柄建草稿时不再重复上传封面", async () => {
@@ -284,7 +300,7 @@ describe("wechat_create_draft", () => {
     expect(data.media_id).toBe("draft-1");
     expect(uploadThumbMaterial).not.toHaveBeenCalled();
     expect(vi.mocked(createDraft).mock.calls[0][0]).toMatchObject({ title: "标题", thumbMediaId: "thumb-1" });
-    expect(vi.mocked(createDraft).mock.calls[0][0].content).toContain("<p>正文</p>");
+    expect(vi.mocked(createDraft).mock.calls[0][0].content).toContain(">正文</p>");
   });
 
   it("封面给网址时由服务端代抓再转投微信", async () => {
