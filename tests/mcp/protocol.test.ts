@@ -280,7 +280,7 @@ describe("wechat_create_draft", () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
-  it("未传主题时默认使用 briefing", async () => {
+  it("未传主题和刊头时默认使用 briefing 与 FzzsAI 刊头", async () => {
     vi.mocked(createDraft).mockResolvedValue({ media_id: "draft-theme-default" });
 
     await call("wechat_create_draft", { title: "标题", content: "<p>正文</p>", cover: "wxmedia:t" });
@@ -290,6 +290,10 @@ describe("wechat_create_draft", () => {
     expect(submitted.content).toContain("font-size:15px;line-height:1.75em");
     expect(submitted.content).not.toContain("今日简报");
     expect(submitted.content).not.toContain("行业动态");
+    expect(submitted.content).toContain("FzzsAI");
+    expect(submitted.content).toContain("编辑：方直AI　来源：公开资料");
+    expect(submitted.content).toContain('src="https://mmbiz.qpic.cn/mmbiz_gif/');
+    expect((submitted.content.match(/<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;<\/p>/g) ?? []).length).toBe(2);
   });
 
   it("用封面句柄建草稿时不再重复上传封面", async () => {
@@ -366,10 +370,15 @@ describe("多图文草稿", () => {
 
     expect(data.media_id).toBe("multi-1");
     expect(data.article_count).toBe(2);
-    const submitted = vi.mocked(createMultiDraft).mock.calls[0][0] as Array<{ title: string; thumbMediaId: string }>;
+    const submitted = vi.mocked(createMultiDraft).mock.calls[0][0] as Array<{ title: string; thumbMediaId: string; content: string }>;
     expect(submitted).toHaveLength(2);
     expect(submitted[0]).toMatchObject({ title: "头条", thumbMediaId: "thumb-1" });
     expect(submitted[1]).toMatchObject({ title: "次条", thumbMediaId: "thumb-2" });
+    for (const article of submitted) {
+      expect(article.content).toContain("FzzsAI");
+      expect(article.content).toContain("编辑：方直AI　来源：公开资料");
+      expect((article.content.match(/<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;<\/p>/g) ?? []).length).toBe(2);
+    }
   });
 
   it("多图文里封面给公网地址时各自转投微信", async () => {

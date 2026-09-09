@@ -25,6 +25,7 @@ const ARTICLE_THEME_STYLES: Record<ArticleThemeId, { text: string; border: strin
 
 const BRIEFING_MASTHEAD_GIF_URL =
   "https://mmbiz.qpic.cn/mmbiz_gif/oxSgVIWJxzia4OzMKDJSr0p57E9Fia1M1lTQX0lWvI3cclfp4ibeJAy9ZgdhjibdSkrZF4KjEVGaO13RO7xDOhSb7PwJvY9MA0DXTWDtXriblZ7A/640?wx_fmt=gif&from=appmsg";
+const DEFAULT_ARTICLE_MASTHEAD = "编辑：方直AI　来源：公开资料";
 
 const articleShape = {
   title: z.string().trim().min(1).max(64),
@@ -37,15 +38,16 @@ const articleShape = {
   only_fans_can_comment: z.boolean().optional(),
 };
 
-const createDraftSchema = z.object({
+const articleCreationShape = {
   ...articleShape,
   theme: articleThemeSchema.optional(),
   masthead: z.string().trim().max(80).optional(),
-});
+};
+const createDraftSchema = z.object(articleCreationShape);
 const updateDraftSchema = z.object({ ...articleShape, media_id: z.string().trim().min(1), index: z.number().int().min(0).optional() });
 const createMultiDraftSchema = z
   .object({
-    articles: z.array(z.object(articleShape)).min(2).max(8),
+    articles: z.array(z.object(articleCreationShape)).min(2).max(8),
   })
   .strict();
 
@@ -291,16 +293,16 @@ function applyArticleTheme(content: string, themeId: ArticleThemeId | undefined,
     "line-height:1.6",
     "text-align:center",
   ].join(";");
-  const masthead = mastheadInput
-    ? '<div style="' + mastheadStyle + '">' +
+  const mastheadText = mastheadInput?.trim() || DEFAULT_ARTICLE_MASTHEAD;
+  const masthead =
+    '<div style="' + mastheadStyle + '">' +
       '<img src="' + BRIEFING_MASTHEAD_GIF_URL + '" alt="FzzsAI" style="display:block;width:100%;max-width:677px;height:auto;margin:0 auto 0.75em;border:0">' +
       '<p style="margin:0;padding:0;color:#999;font-size:12px;line-height:1.6;text-align:center">' +
-      escapeMasthead(mastheadInput) +
+      escapeMasthead(mastheadText) +
       "</p>" +
       '<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;</p>' +
       '<p style="margin:0;line-height:1.75em;text-align:left">&nbsp;</p>' +
-      "</div>"
-    : "";
+      "</div>";
   return '<section style="' + outerStyle + '">' + masthead + normalizeArticleContent(content, theme) + "</section>";
 }
 
@@ -445,8 +447,7 @@ const ARTICLE_PROPERTIES = {
   only_fans_can_comment: { type: "boolean", description: "是否仅粉丝可评论，默认 false。" },
 } as const;
 
-const CREATE_ARTICLE_PROPERTIES = {
-  ...ARTICLE_PROPERTIES,
+const ARTICLE_THEME_PROPERTIES = {
   theme: {
     type: "string",
     enum: [...ARTICLE_THEME_IDS],
@@ -454,8 +455,13 @@ const CREATE_ARTICLE_PROPERTIES = {
   },
   masthead: {
     type: "string",
-    description: "文章顶部信息，可选；会引用公众号素材库中的 FzzsAI 动态 GIF，并按“编辑与来源 / 两行空白”的参考样式渲染。建议传入类似“编辑：方直AI　来源：公开资料”的短文案。不传时不显示信息栏。",
+    description: "文章顶部信息，可选；会引用公众号素材库中的 FzzsAI 动态 GIF，并按“编辑与来源 / 两行空白”的参考样式渲染。建议传入类似“编辑：方直AI　来源：公开资料”的短文案。不传时默认使用“编辑：方直AI　来源：公开资料”。",
   },
+} as const;
+
+const CREATE_ARTICLE_PROPERTIES = {
+  ...ARTICLE_PROPERTIES,
+  ...ARTICLE_THEME_PROPERTIES,
 } as const;
 
 export type ToolDefinition = {
@@ -500,7 +506,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_create_draft",
     description:
-      "在公众号草稿箱里新建一篇图文草稿。正文用 HTML；可用 theme=briefing 和 masthead 生成带素材库 GIF 刊头的资讯排版。服务端会自动把正文里非微信域名的图片转投到微信并回填地址（否则微信会静默丢弃，读者看到空白）。返回 media_id，后续可用于 wechat_update_draft / wechat_publish_draft。此操作不会推送给粉丝。",
+      "在公众号草稿箱里新建一篇图文草稿。正文用 HTML；默认使用 briefing 主题和 FzzsAI GIF 刊头，也可用 theme 和 masthead 自定义。服务端会自动把正文里非微信域名的图片转投到微信并回填地址（否则微信会静默丢弃，读者看到空白）。返回 media_id，后续可用于 wechat_update_draft / wechat_publish_draft。此操作不会推送给粉丝。",
     inputSchema: { type: "object", properties: CREATE_ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
     handler: async (args) => {
       const input = createDraftSchema.parse(args);
@@ -512,7 +518,7 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "wechat_create_multi_draft",
     description:
-      "一次创建多图文草稿（2-8 篇）。多图文=一篇草稿含多篇文章，发布或群发时粉丝收到一条带头条+次条的多图文消息。每篇的标题/正文/封面处理与 wechat_create_draft 一致（正文 HTML、封面 wxmedia: 句柄或公网地址、外链图片自动转投）。单篇请用 wechat_create_draft。多图文模式下微信会忽略每篇的 digest（摘要）。",
+      "一次创建多图文草稿（2-8 篇）。多图文=一篇草稿含多篇文章，发布或群发时粉丝收到一条带头条+次条的多图文消息。每篇默认使用 briefing 主题和 FzzsAI GIF 刊头，也可分别传 theme 和 masthead 自定义；正文 HTML、封面 wxmedia: 句柄或公网地址、外链图片自动转投。单篇请用 wechat_create_draft。多图文模式下微信会忽略每篇的 digest（摘要）。",
     inputSchema: {
       type: "object",
       properties: {
@@ -520,7 +526,7 @@ export const TOOLS: ToolDefinition[] = [
           type: "array",
           minItems: 2,
           maxItems: 8,
-          items: { type: "object", properties: ARTICLE_PROPERTIES, required: ["title", "content", "cover"], additionalProperties: false },
+          items: { type: "object", properties: { ...ARTICLE_PROPERTIES, ...ARTICLE_THEME_PROPERTIES }, required: ["title", "content", "cover"], additionalProperties: false },
           description: "多图文文章数组，2-8 篇；每篇字段与单篇 wechat_create_draft 完全一致。",
         },
       },
@@ -529,7 +535,9 @@ export const TOOLS: ToolDefinition[] = [
     },
     handler: async (args) => {
       const { articles } = createMultiDraftSchema.parse(args);
-      const built = await Promise.all(articles.map(buildArticle));
+      const built = await Promise.all(
+        articles.map((article) => buildArticle({ ...article, content: applyArticleTheme(article.content, article.theme, article.masthead) })),
+      );
       const uploadedCount = built.reduce((sum, item) => sum + item.uploadedCount, 0);
       const { media_id } = await createMultiDraft(built.map((item) => item.article));
       return {
