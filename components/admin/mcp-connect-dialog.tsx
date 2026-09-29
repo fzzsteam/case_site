@@ -4,6 +4,8 @@ import { Check, Copy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const MCP_SERVER_NAME = "fzzs-mcp";
+
 type Guide = {
   key: string;
   label: string;
@@ -28,8 +30,8 @@ function buildGuides(endpoint: string, token: string): Guide[] {
       key: "claude-code",
       label: "Claude Code",
       audience: "命令行版 Claude Code",
-      hint: "执行后在 Claude Code 里输入 /mcp，看到 wechat 且工具数为 52 就算接上了。",
-      blocks: [{ code: `claude mcp add --transport http wechat ${endpoint} \\\n  --header "Authorization: ${auth}"` }],
+      hint: "执行后在 Claude Code 里输入 /mcp，确认服务器已连接。Agent 能看到的工具由该 Token 的权限决定。",
+      blocks: [{ code: `claude mcp add --transport http ${MCP_SERVER_NAME} ${endpoint} \\\n  --header "Authorization: ${auth}"` }],
     },
     {
       key: "json",
@@ -41,7 +43,7 @@ function buildGuides(endpoint: string, token: string): Guide[] {
           caption: "写进客户端的 MCP 配置文件（通常是 mcp.json 或设置里的「编辑配置」）",
           code: `{
   "mcpServers": {
-    "wechat": ${jsonServer.split("\n").join("\n    ")}
+    "${MCP_SERVER_NAME}": ${jsonServer.split("\n").join("\n    ")}
   }
 }`,
         },
@@ -57,7 +59,7 @@ function buildGuides(endpoint: string, token: string): Guide[] {
           caption: ".vscode/mcp.json",
           code: `{
   "servers": {
-    "wechat": ${jsonServer.split("\n").join("\n    ")}
+    "${MCP_SERVER_NAME}": ${jsonServer.split("\n").join("\n    ")}
   }
 }`,
         },
@@ -72,7 +74,7 @@ function buildGuides(endpoint: string, token: string): Guide[] {
         {
           code: `{
   "mcpServers": {
-    "wechat": {
+    "${MCP_SERVER_NAME}": {
       "command": "npx",
       "args": [
         "-y",
@@ -95,7 +97,7 @@ function buildGuides(endpoint: string, token: string): Guide[] {
       blocks: [
         {
           caption: "按客户端界面上的字段逐项填入",
-          code: `服务器名称：wechat
+          code: `服务器名称：${MCP_SERVER_NAME}
 传输类型：Streamable HTTP（有的写作 streamableHttp / HTTP / 可流式传输的 HTTP）
 服务器地址：${endpoint}
 请求头名称：Authorization
@@ -124,7 +126,7 @@ function CodeBlock({ code, caption }: { code: string; caption?: string }) {
       {caption && <p className="mb-1.5 text-xs text-muted-foreground">{caption}</p>}
       <div className="relative">
         <pre className="overflow-x-auto rounded-lg border border-border bg-secondary/60 p-3 pr-11 font-mono text-xs leading-relaxed text-foreground">{code}</pre>
-        <Button variant="ghost" size="icon-sm" aria-label="复制代码" className="absolute right-1.5 top-1.5 bg-card/80" onClick={copy}>
+        <Button variant="ghost" size="icon-sm" aria-label="复制代码" title="复制代码" className="absolute right-1.5 top-1.5 bg-card/80" onClick={copy}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
         </Button>
       </div>
@@ -166,7 +168,7 @@ export function McpConnectDialog({ open, endpoint, token, tokenName, onClose }: 
             使用 Token「{tokenName}」。下面的配置已经把地址和凭证填好，选你用的客户端复制即可。
           </p>
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="关闭" onClick={onClose}>
+        <Button variant="ghost" size="icon-sm" aria-label="关闭" title="关闭" onClick={onClose}>
           <X size={16} />
         </Button>
       </div>

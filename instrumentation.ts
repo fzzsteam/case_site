@@ -8,8 +8,9 @@ export async function register() {
     await runMigrations();
     const { seedIfEmpty } = await import("@/lib/cases/seed");
     await seedIfEmpty();
-    const { backfillCaseSlugsAndDetails } = await import("@/lib/cases/backfill");
+    const { backfillCaseSlugsAndDetails, backfillCasePresentationContent } = await import("@/lib/cases/backfill");
     await backfillCaseSlugsAndDetails();
+    await backfillCasePresentationContent();
     const { migrateTalentData } = await import("@/lib/talent/seed");
     await migrateTalentData();
     const { ensureAdminCredentials } = await import("@/lib/auth/credentials");

@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Clapperboard, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Category, CaseStudy } from "@/lib/cases/types";
 import { useToast } from "./toast";
 import { ConfirmDialog } from "./confirm-dialog";
+import { CaseFormDialog } from "./case-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,21 +19,36 @@ export function CaseList() {
   const [cases, setCases] = useState<CaseStudy[] | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<string>("全部");
+  const [activeForm, setActiveForm] = useState<{ instance: number; item?: CaseStudy } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CaseStudy | null>(null);
   const [deleting, setDeleting] = useState(false);
   const dragIndex = useRef<number | null>(null);
+  const formInstance = useRef(0);
   const tabs = ["全部", ...categories.map((item) => item.name)];
 
+  const refreshCases = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/cases");
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setCases(data.cases);
+    } catch {
+      showToast("error", "加载案例列表失败");
+    }
+  }, [showToast]);
+
   useEffect(() => {
-    fetch("/api/admin/cases")
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((data) => setCases(data.cases))
-      .catch(() => showToast("error", "加载案例列表失败"));
+    refreshCases();
     fetch("/api/admin/categories")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((data) => setCategories(data.categories))
       .catch(() => showToast("error", "加载分类列表失败"));
-  }, [showToast]);
+  }, [refreshCases, showToast]);
+
+  function openCaseForm(item?: CaseStudy) {
+    formInstance.current += 1;
+    setActiveForm({ instance: formInstance.current, item });
+  }
 
   const filtered = cases ? (category === "全部" ? cases : cases.filter((item) => item.category === category)) : [];
   const canReorder = category === "全部";
@@ -82,11 +97,9 @@ export function CaseList() {
           <h1 className="text-xl font-semibold text-foreground">案例管理</h1>
           <p className="mt-1 text-sm text-muted-foreground">管理官网展示的案例内容与排序</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/cases/new">
-            <Plus size={16} />
-            新建案例
-          </Link>
+        <Button onClick={() => openCaseForm()}>
+          <Plus size={16} />
+          新建案例
         </Button>
       </div>
 
@@ -168,10 +181,8 @@ export function CaseList() {
                   <TableCell className="text-sm text-muted-foreground">{item.episodes.length} 个视频</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="icon-sm">
-                        <Link href={`/admin/cases/${item.id}/edit`} aria-label={`编辑${item.title}`}>
-                          <Pencil size={15} />
-                        </Link>
+                      <Button variant="ghost" size="icon-sm" aria-label={`编辑${item.title}`} onClick={() => openCaseForm(item)}>
+                        <Pencil size={15} />
                       </Button>
                       <Button variant="ghost" size="icon-sm" aria-label={`删除${item.title}`} onClick={() => setPendingDelete(item)}>
                         <Trash2 size={15} />
@@ -193,6 +204,17 @@ export function CaseList() {
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
+      {activeForm && (
+        <CaseFormDialog
+          key={activeForm.instance}
+          initialCase={activeForm.item}
+          onClose={() => setActiveForm(null)}
+          onSaved={() => {
+            setActiveForm(null);
+            void refreshCases();
+          }}
+        />
+      )}
     </>
   );
 }

@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { WechatApiError } from "@/lib/wechat/errors";
 import { TOOLS, TOOLS_BY_NAME } from "./tools";
+import { hasToolPermission } from "./permissions";
 
 export const SERVER_NAME = "wechat-mp";
 export const SERVER_VERSION = "1.0.0";
@@ -42,6 +43,37 @@ export const SERVER_INSTRUCTIONS = `通过本服务可以把文章发到微信�
 3. 封面把 ref（wxmedia:xxx）传给 cover 参数；如果要群发图片，可把同一个 ref 传给 wechat_mass_preview / wechat_mass_send 的 media_id（工具会自动去掉 wxmedia: 前缀）；正文图把 ref（图片地址）填进 <img src>
 
 封面是微信的必填项，没有封面建不了草稿。如果图片本来就有公网地址，也可以直接把地址填给 cover 或 <img src>，服务端会代为转投微信。`;
+
+function buildServerInstructions(permissions: string[]): string {
+  const availableNames = new Set(TOOLS.filter((tool) => hasToolPermission(permissions, tool)).map((tool) => tool.name));
+  const wechatTools = TOOLS.filter((tool) => tool.name.startsWith("wechat_"));
+  const visibleWechatTools = wechatTools.filter((tool) => availableNames.has(tool.name));
+  const caseTools = TOOLS.filter((tool) => !tool.name.startsWith("wechat_"));
+  const visibleCaseTools = caseTools.filter((tool) => availableNames.has(tool.name));
+  const sections: string[] = [];
+
+  if (visibleWechatTools.length === wechatTools.length && wechatTools.length > 0) {
+    sections.push(SERVER_INSTRUCTIONS);
+  } else if (visibleWechatTools.length > 0) {
+    sections.push("公众号工具权限经过了单独筛选，只能调用 tools/list 返回的工具。请遵守实际可见工具的描述；群发操作不可逆，必须在当前对话中先取得用户明确确认。" );
+    if (availableNames.has("wechat_create_upload_url")) {
+      sections.push("本地公众号图片通过上传地址和 curl 传输，不要把图片字节放入工具参数。" );
+    }
+  }
+
+  if (visibleCaseTools.length > 0) {
+    sections.push("案例和分类工具只能调用 tools/list 返回的工具。新建、编辑和排序会立即影响公开网站；编辑工具支持只传要修改的字段，修改分集时需要传完整且有序的分集列表。" );
+    if (availableNames.has("case_create_upload_url")) {
+      sections.push("案例素材只从 Agent 可访问的本地文件上传：调用上传地址工具，再用 curl 把本地文件字节 PUT 到本站接口；服务端会流式转存到 OSS，不支持公网 URL 导入。封面支持 png/jpg/jpeg/webp，视频支持 mp4/mov/webm；视频方向和时长由 Agent 从本地视频读取。" );
+    }
+    if (availableNames.has("cases_delete") || availableNames.has("categories_delete")) {
+      sections.push("删除案例或分类前，必须先在当前对话中向用户说明具体对象和后果并取得明确确认，再将 confirm 设为 true。案例删除会保留 OSS 文件；仍被案例使用的分类不能删除。" );
+    }
+  }
+
+  if (sections.length === 0) return "当前 Token 未授予任何 MCP 工具权限，请管理员在后台调整该 Token 的权限。";
+  return sections.join("\n\n");
+}
 
 export type JsonRpcRequest = { jsonrpc?: string; id?: string | number | null; method?: string; params?: unknown };
 
@@ -116,7 +148,7 @@ function normalizeToolArguments(raw: unknown): unknown {
 /**
  * 处理单条 JSON-RPC 消息。返回 null 表示这是通知（没有 id），HTTP 层应答 202 空响应。
  */
-export async function handleMessage(message: unknown, context: { origin: string }): Promise<JsonRpcResponse | null> {
+export async function handleMessage(message: unknown, context: { origin: string; permissions?: string[] }): Promise<JsonRpcResponse | null> {
   const parsed = requestSchema.safeParse(message);
   if (!parsed.success) {
     const id = (message as JsonRpcRequest | null)?.id ?? null;
@@ -124,6 +156,8 @@ export async function handleMessage(message: unknown, context: { origin: string 
   }
 
   const { id, method, params } = parsed.data;
+  // HTTP 入口总是传入数据库中的 Token 权限；此回退只兼容没有传权限的旧协议调用方。
+  const permissions = context.permissions ?? ["wechat.*"];
   const isNotification = id === undefined;
   const responseId = id ?? null;
 
@@ -134,7 +168,7 @@ export async function handleMessage(message: unknown, context: { origin: string 
         protocolVersion: requested && SUPPORTED_PROTOCOL_VERSIONS.has(requested) ? requested : DEFAULT_PROTOCOL_VERSION,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-        instructions: SERVER_INSTRUCTIONS,
+        instructions: buildServerInstructions(permissions),
       });
     }
     case "notifications/initialized":
@@ -143,13 +177,24 @@ export async function handleMessage(message: unknown, context: { origin: string 
     case "ping":
       return isNotification ? null : ok(responseId, {});
     case "tools/list":
-      return ok(responseId, { tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
+      return ok(responseId, {
+        tools: TOOLS
+          .filter((tool) => hasToolPermission(permissions, tool))
+          .map(({ name, description, inputSchema, annotations, _meta }) => ({
+            name,
+            description,
+            inputSchema,
+            ...(annotations ? { annotations } : {}),
+            ...(_meta ? { _meta } : {}),
+          })),
+      });
     case "tools/call": {
       const call = z.object({ name: z.string(), arguments: z.unknown().optional() }).safeParse(params);
       if (!call.success) return fail(responseId, -32602, "Invalid params");
 
       const tool = TOOLS_BY_NAME.get(call.data.name);
       if (!tool) return fail(responseId, -32602, `Unknown tool: ${call.data.name}`);
+      if (!hasToolPermission(permissions, tool)) return fail(responseId, -32602, `Unauthorized tool: ${call.data.name}`);
 
       const startedAt = Date.now();
       try {

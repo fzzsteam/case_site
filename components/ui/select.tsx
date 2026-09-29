@@ -29,9 +29,11 @@ function SelectTrigger({ className, children, ...props }: React.ComponentProps<t
   );
 }
 
-function SelectContent({ className, children, position = "popper", ...props }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+function SelectContent({ className, children, position = "popper", portalContainer, ...props }: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  portalContainer?: React.ComponentProps<typeof SelectPrimitive.Portal>["container"];
+}) {
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={portalContainer}>
       <SelectPrimitive.Content
         data-slot="select-content"
         position={position}

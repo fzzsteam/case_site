@@ -142,10 +142,18 @@ MCP 工具的参数由模型逐 token 生成，图片数据不可能写进参数
 
 正文里的 `<img src>` 如果不是微信域名，服务端会自动抓取、转投微信并回填地址——微信对外链图片是**静默丢弃**的，不做这步会出现「草稿建成功但图片全是空白」。除此之外正文 HTML 不做任何改动。
 
+### 案例管理 MCP
+
+`/admin/tokens` 创建 Token 时可选择「公众号管理」和「案例管理」权限组，再展开组内权限单独调整。未授权工具不会出现在该 Token 的 `tools/list` 中，直接调用未授权工具也会被服务端拒绝；创建后可在后台修改权限。升级后既有 Token 只保留原公众号权限，不会自动获得案例权限。
+
+案例工具与公众号工具共用 `/api/mcp`。新建、编辑和排序会立即影响公开网站；案例编辑支持只传变更字段，修改分集时需提交完整且有序的分集列表。删除案例或分类需要 Agent 先在当前对话中取得明确确认，再以 `confirm=true` 调用；没有后台审批。删除案例会保留 OSS 文件，仍被案例使用的分类不能删除。
+
+案例素材通过 `case_create_upload_url` 获取本站短时有效的上传地址，再由 Agent 用 `curl -X PUT --upload-file` 上传本地封面或视频；本站接口会流式转存到 OSS，不提供公网 URL 导入。视频横竖屏和时长由 Agent 从本地视频读取并传入案例数据。
+
 ### 上线检查清单
 
 1. `GET /api/health/egress-ip` 连打 5 次，IP 恒定 → 填入公众号 IP 白名单
-2. `/admin/tokens` 建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且能看到 52 个工具
+2. `/admin/tokens` 选择工具权限并建 Token → 本地 `claude mcp add` → `/mcp` 确认连上且工具范围符合 Token 授权
 3. `wechat_create_upload_url` → curl 传一张图 → 拿到 ref
 4. `wechat_create_draft` 建一篇带封面和正文图的草稿 → **去公众平台后台肉眼确认排版和图片都在**
 5. `wechat_publish_draft` → `wechat_get_publish_status` 轮询到成功 → 打开文章链接确认

@@ -14,6 +14,10 @@ import { rewriteContentImages } from "@/lib/wechat/content";
 import { fetchRemoteImage, uploadThumbMaterial } from "@/lib/wechat/media";
 import { buildUploadUrl, UPLOAD_URL_TTL_MS } from "./upload-signature";
 import { COVER_HANDLE_PREFIX } from "./refs";
+import { createCase, deleteCase, getCaseById, listCases, reorderCases, updateCase, type CaseInput } from "@/lib/cases/queries";
+import { CategoryInUseError, categoryNameExists, createCategory, deleteCategory, listCategories, renameCategory } from "@/lib/cases/categories-queries";
+import { assertValidCaseMediaPaths, caseInputSchema, categoryInputSchema, reorderInputSchema } from "@/lib/cases/validation";
+import { buildCaseUploadUrl, CASE_UPLOAD_URL_TTL_SECONDS } from "./case-upload-signature";
 
 const ARTICLE_THEME_IDS = ["briefing"] as const;
 type ArticleThemeId = (typeof ARTICLE_THEME_IDS)[number];
@@ -468,8 +472,24 @@ export type ToolDefinition = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  permission?: string;
+  annotations?: { title?: string; readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean; openWorldHint?: boolean };
+  _meta?: Record<string, unknown>;
   handler: (args: unknown, context: { origin: string }) => Promise<unknown>;
 };
+
+const caseUpdateFields = caseInputSchema.partial().shape;
+const caseUpdateSchema = z.object({ id: z.string().uuid(), ...caseUpdateFields }).strict().refine(
+  (input) => Object.keys(input).some((key) => key !== "id"),
+  "至少提供一個要修改的案例字段。",
+);
+
+const caseDeleteSchema = z.object({ id: z.string().uuid(), confirm: z.boolean().optional().default(false) }).strict();
+const categoryDeleteSchema = z.object({ id: z.string().uuid(), confirm: z.boolean().optional().default(false) }).strict();
+
+function requireExplicitConfirmation(confirmed: boolean, target: string): void {
+  if (!confirmed) throw new Error(`删除「${target}」尚未执行。请先在当前对话中向用户说明将删除的对象及后果，获得用户明确确认后，再以 confirm=true 重试。`);
+}
 
 export const TOOLS: ToolDefinition[] = [
   {
@@ -1328,6 +1348,312 @@ export const TOOLS: ToolDefinition[] = [
     description: "列出公众号的客服账号（发送客服消息时可指定用哪个客服身份）。",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: async () => listKfAccounts(),
+  },
+  {
+    name: "cases_list",
+    description: "列出当前全部案例，包含标题、分类、简介、选填展示内容、封面和分集视频信息。新建、编辑和排序会立即反映到公开网站。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    permission: "cases_list",
+    annotations: { title: "查询案例列表", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    handler: async () => ({ cases: await listCases() }),
+  },
+  {
+    name: "cases_get",
+    description: "按案例 ID 查询案例完整详情，包括列表简介、详情页导语、创作说明、选填事实信息、创作方法、项目价值、FAQ、封面和分集视频。",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string", format: "uuid", description: "案例 ID，可从 cases_list 获取。" } },
+      required: ["id"],
+      additionalProperties: false,
+    },
+    permission: "cases_get",
+    annotations: { title: "查看案例详情", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    handler: async (args) => {
+      const { id } = z.object({ id: z.string().uuid() }).parse(args);
+      const item = await getCaseById(id);
+      if (!item) throw new Error("案例不存在。");
+      return item;
+    },
+  },
+  {
+    name: "cases_create",
+    description: "新建案例并立即发布到公开网站。标题、分类、简介、封面和至少一个分集视频必填；详情页导语、创作说明、事实信息、创作方法、项目价值和 FAQ 均选填，空内容会在前台隐藏。封面和视频必须先通过 case_create_upload_url 上传；每个视频需要提供横竖屏方向，时长可选。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "案例标题，最多 255 个字符。" },
+        category: { type: "string", description: "已有分类名称，可先调用 categories_list 查询。" },
+        summary: { type: "string", description: "必填的列表简介，详情页导语留空时也会显示这段内容。" },
+        detailIntro: { type: "string", description: "选填的详情页导语，显示在标题下方；留空时回退到 summary。" },
+        client: { type: "string", description: "选填的合作方 / 主题事实信息。" },
+        region: { type: "string", description: "选填的项目地区事实信息。" },
+        deliverable: { type: "string", description: "选填的交付内容事实信息。" },
+        detail: { type: "string", description: "选填的创作说明；留空时前台隐藏该区块。" },
+        method: { type: "string", description: "选填的创作方法；留空时前台隐藏该区块。" },
+        value: { type: "string", description: "选填的项目价值；留空时前台隐藏该区块。" },
+        faq: {
+          type: "array",
+          description: "选填的常见问题；按问题和答案填写，不传或传空数组时前台隐藏 FAQ 区块。",
+          items: {
+            type: "object",
+            properties: {
+              question: { type: "string", description: "常见问题。" },
+              answer: { type: "string", description: "对应答案。" },
+            },
+            required: ["question", "answer"],
+            additionalProperties: false,
+          },
+        },
+        coverPath: { type: "string", description: "封面上传成功后返回的 object_path。" },
+        episodes: {
+          type: "array",
+          minItems: 1,
+          description: "按网站展示顺序排列的视频分集。Agent 从本地视频读取横竖屏和时长。",
+          items: {
+            type: "object",
+            properties: {
+              videoPath: { type: "string", description: "视频上传成功后返回的 object_path。" },
+              orientation: { type: "string", enum: ["landscape", "portrait"], description: "由 Agent 从本地视频读取的方向。" },
+              durationSeconds: { type: ["integer", "null"], minimum: 1, description: "由 Agent 从本地视频读取的时长秒数，可选；无法读取时传 null。" },
+            },
+            required: ["videoPath", "orientation"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["title", "category", "summary", "coverPath", "episodes"],
+      additionalProperties: false,
+    },
+    permission: "cases_create",
+    annotations: { title: "新建案例", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    handler: async (args) => {
+      const input = caseInputSchema.parse(args);
+      assertValidCaseMediaPaths(input);
+      if (!(await categoryNameExists(input.category))) throw new Error("分类不存在，请先调用 categories_list 并选择已有分类。");
+      const id = await createCase(input as CaseInput);
+      return { id, case: await getCaseById(id), published: true };
+    },
+  },
+  {
+    name: "cases_update",
+    description: "部分更新案例并立即反映到公开网站。只传需要修改的字段，其余字段保持原值；选填展示字段传空字符串可清空，FAQ 传空数组可清空。若修改 episodes，必须传入完整且按展示顺序排列的分集数组。更新视频方向/时长时由 Agent 从本地视频读取。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid", description: "要修改的案例 ID。" },
+        title: { type: "string", description: "案例标题，最多 255 个字符。" },
+        category: { type: "string", description: "已有分类名称。" },
+        summary: { type: "string", description: "必填的列表简介；详情页导语留空时也会显示这段内容。" },
+        detailIntro: { type: "string", description: "选填的详情页导语，空字符串可清空并回退到 summary。" },
+        client: { type: "string", description: "选填的合作方 / 主题；空字符串可清空。" },
+        region: { type: "string", description: "选填的项目地区；空字符串可清空。" },
+        deliverable: { type: "string", description: "选填的交付内容；空字符串可清空。" },
+        detail: { type: "string", description: "选填的创作说明；空字符串可隐藏该区块。" },
+        method: { type: "string", description: "选填的创作方法；空字符串可隐藏该区块。" },
+        value: { type: "string", description: "选填的项目价值；空字符串可隐藏该区块。" },
+        faq: {
+          type: "array",
+          description: "选填的常见问题完整列表；传空数组清空 FAQ。",
+          items: {
+            type: "object",
+            properties: { question: { type: "string" }, answer: { type: "string" } },
+            required: ["question", "answer"],
+            additionalProperties: false,
+          },
+        },
+        coverPath: { type: "string", description: "封面 object_path。" },
+        episodes: {
+          type: "array",
+          minItems: 1,
+          description: "要替换为的完整分集列表，顺序决定网站展示顺序。",
+          items: {
+            type: "object",
+            properties: {
+              videoPath: { type: "string" },
+              orientation: { type: "string", enum: ["landscape", "portrait"] },
+              durationSeconds: { type: ["integer", "null"], minimum: 1, description: "可选，秒数；无法读取时传 null。" },
+            },
+            required: ["videoPath", "orientation"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["id"],
+      additionalProperties: false,
+    },
+    permission: "cases_update",
+    annotations: { title: "编辑案例", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    handler: async (args) => {
+      const { id, ...changes } = caseUpdateSchema.parse(args);
+      const existing = await getCaseById(id);
+      if (!existing) throw new Error("案例不存在。");
+      const merged: CaseInput = {
+        title: changes.title ?? existing.title,
+        category: changes.category ?? existing.category,
+        summary: changes.summary ?? existing.summary,
+        detailIntro: changes.detailIntro ?? existing.detailIntro ?? undefined,
+        client: changes.client ?? existing.client ?? undefined,
+        region: changes.region ?? existing.region ?? undefined,
+        deliverable: changes.deliverable ?? existing.deliverable ?? undefined,
+        detail: changes.detail ?? existing.detail,
+        method: changes.method ?? existing.method ?? undefined,
+        value: changes.value ?? existing.value ?? undefined,
+        faq: changes.faq ?? existing.faq,
+        coverPath: changes.coverPath ?? existing.coverPath,
+        episodes: changes.episodes ?? existing.episodes.map(({ videoPath, orientation, durationSeconds }) => ({ videoPath, orientation, durationSeconds })),
+      };
+      const validated = caseInputSchema.parse(merged);
+      assertValidCaseMediaPaths(validated);
+      if (!(await categoryNameExists(validated.category))) throw new Error("分类不存在，请先调用 categories_list 并选择已有分类。");
+      await updateCase(id, changes as Partial<CaseInput>);
+      return { id, case: await getCaseById(id), published: true };
+    },
+  },
+  {
+    name: "cases_reorder",
+    description: "设置案例在网站上的展示顺序。orderedIds 按从前到后的顺序填写案例 ID。",
+    inputSchema: {
+      type: "object",
+      properties: { orderedIds: { type: "array", minItems: 1, items: { type: "string", format: "uuid" }, description: "按目标展示顺序排列的案例 ID。" } },
+      required: ["orderedIds"],
+      additionalProperties: false,
+    },
+    permission: "cases_reorder",
+    annotations: { title: "调整案例排序", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    handler: async (args) => {
+      const { orderedIds } = reorderInputSchema.parse(args);
+      await reorderCases(orderedIds);
+      return { ok: true, orderedIds };
+    },
+  },
+  {
+    name: "cases_delete",
+    description: "删除案例记录。删除会立即从公开网站移除案例，但会保留 OSS 封面和视频文件。调用前必须先在对话中向用户说明案例标题并取得明确确认，然后传 confirm=true；没有明确确认时先传 confirm=false，工具会停止并提示确认。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid", description: "要删除的案例 ID。" },
+        confirm: { type: "boolean", description: "仅在 Agent 已在当前对话中取得用户明确确认后设为 true。" },
+      },
+      required: ["id"],
+      additionalProperties: false,
+    },
+    permission: "cases_delete",
+    annotations: { title: "删除案例", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    _meta: { "anthropic/requiresUserInteraction": true },
+    handler: async (args) => {
+      const { id, confirm } = caseDeleteSchema.parse(args);
+      const item = await getCaseById(id);
+      if (!item) throw new Error("案例不存在。");
+      requireExplicitConfirmation(confirm, item.title);
+      await deleteCase(id);
+      return { ok: true, deletedId: id, title: item.title, mediaFilesRetained: true };
+    },
+  },
+  {
+    name: "categories_list",
+    description: "列出案例分类，包括 ID、名称和排序。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    permission: "categories_list",
+    annotations: { title: "查询案例分类", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    handler: async () => ({ categories: await listCategories() }),
+  },
+  {
+    name: "categories_create",
+    description: "新建案例分类。分类名称必须唯一。",
+    inputSchema: {
+      type: "object",
+      properties: { name: { type: "string", minLength: 1, maxLength: 50, description: "分类名称，最多 50 个字符。" } },
+      required: ["name"],
+      additionalProperties: false,
+    },
+    permission: "categories_create",
+    annotations: { title: "新建案例分类", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    handler: async (args) => {
+      const { name } = categoryInputSchema.parse(args);
+      if (await categoryNameExists(name)) throw new Error("同名分类已存在。");
+      return { category: await createCategory(name) };
+    },
+  },
+  {
+    name: "categories_rename",
+    description: "重命名案例分类，并同步更新使用该分类的案例。分类名称必须唯一。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid", description: "要重命名的分类 ID。" },
+        name: { type: "string", minLength: 1, maxLength: 50, description: "新的分类名称。" },
+      },
+      required: ["id", "name"],
+      additionalProperties: false,
+    },
+    permission: "categories_rename",
+    annotations: { title: "重命名案例分类", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    handler: async (args) => {
+      const { id, name } = z.object({ id: z.string().uuid(), ...categoryInputSchema.shape }).strict().parse(args);
+      const existing = (await listCategories()).find((category) => category.id === id);
+      if (!existing) throw new Error("分类不存在。");
+      if (await categoryNameExists(name, id)) throw new Error("同名分类已存在。");
+      await renameCategory(id, name);
+      return { id, previousName: existing.name, name };
+    },
+  },
+  {
+    name: "categories_delete",
+    description: "删除案例分类。当前有案例使用的分类不能删除。调用前必须先在对话中向用户说明分类名称并取得明确确认，然后传 confirm=true；没有明确确认时先传 confirm=false，工具会停止并提示确认。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", format: "uuid", description: "要删除的分类 ID。" },
+        confirm: { type: "boolean", description: "仅在 Agent 已在当前对话中取得用户明确确认后设为 true。" },
+      },
+      required: ["id"],
+      additionalProperties: false,
+    },
+    permission: "categories_delete",
+    annotations: { title: "删除案例分类", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    _meta: { "anthropic/requiresUserInteraction": true },
+    handler: async (args) => {
+      const { id, confirm } = categoryDeleteSchema.parse(args);
+      const category = (await listCategories()).find((item) => item.id === id);
+      if (!category) throw new Error("分类不存在。");
+      requireExplicitConfirmation(confirm, category.name);
+      try {
+        await deleteCategory(id);
+      } catch (error) {
+        if (error instanceof CategoryInUseError) throw new Error("分类仍被案例使用，不能删除。请先将案例改到其他分类。");
+        throw error;
+      }
+      return { ok: true, deletedId: id, name: category.name };
+    },
+  },
+  {
+    name: "case_create_upload_url",
+    description: "为案例封面图片或视频生成有效 15 分钟的本站本地文件上传地址。上传接口只接收 Agent 从本地文件读取的字节，不支持传入公网 URL 代为下载；服务端会把文件流式转存到 OSS。调用后使用 curl -X PUT --upload-file 上传，并在创建/编辑案例时使用上传响应里的 object_path。支持封面 png/jpg/jpeg/webp；视频 mp4/mov/webm。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fileName: { type: "string", minLength: 1, maxLength: 255, description: "本地文件名，需保留扩展名。" },
+        kind: { type: "string", enum: ["cover", "video"], description: "cover=封面图片，video=分集视频。" },
+      },
+      required: ["fileName", "kind"],
+      additionalProperties: false,
+    },
+    permission: "case_create_upload_url",
+    annotations: { title: "上传案例素材", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    handler: async (args, { origin }) => {
+      const input = z.object({ fileName: z.string().min(1).max(255), kind: z.enum(["cover", "video"]) }).parse(args);
+      const { url: uploadUrl, objectPath, contentType, expiresAt } = buildCaseUploadUrl(origin, input.kind, input.fileName);
+      return {
+        upload_url: uploadUrl,
+        object_path: objectPath,
+        content_type: contentType,
+        expires_in_seconds: CASE_UPLOAD_URL_TTL_SECONDS,
+        expires_at: new Date(expiresAt).toISOString(),
+        curl_example: `curl -fS -X PUT -H 'Content-Type: ${contentType}' --upload-file '/path/to/local/file' '${uploadUrl}'`,
+        next_step: `使用本地文件字节 PUT 到 upload_url。上传接口返回 object_path=${objectPath} 后，在案例数据中使用该 object_path。视频还需由 Agent 从本地文件读取 orientation（landscape/portrait）和 durationSeconds（秒，可选）。`,
+      };
+    },
   },
 ];
 

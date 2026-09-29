@@ -13,7 +13,8 @@ function resolveOrigin(request: Request): string {
 
 export async function POST(request: Request) {
   const token = extractBearerToken(request.headers.get("authorization"));
-  if (!(await verifyToken(token))) {
+  const verifiedToken = await verifyToken(token);
+  if (!verifiedToken) {
     return Response.json(UNAUTHORIZED, { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
   }
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported" } }, { status: 400 });
   }
 
-  const response = await handleMessage(message, { origin: resolveOrigin(request) });
+  const response = await handleMessage(message, { origin: resolveOrigin(request), permissions: verifiedToken.permissions });
   if (!response) return new Response(null, { status: 202 });
   return Response.json(response);
 }

@@ -9,7 +9,6 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/content/site";
 import { getCaseSeoProfile } from "@/lib/seo/case-content";
 import { breadcrumbJsonLd, faqPageJsonLd, videoObjectJsonLd } from "@/lib/seo/jsonld";
-import type { CaseStudy } from "@/lib/cases/types";
 
 // 不使用 generateStaticParams：构建镜像时数据库不可达（见 Dockerfile），
 // 详情页改为首次访问时按需渲染并缓存（ISR），避免构建阶段连接数据库。
@@ -45,45 +44,46 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ slu
   const profile = getCaseSeoProfile(caseStudy);
   const canonical = `${siteConfig.url}/cases/${caseStudy.slug}`;
   const cover = `${siteConfig.url}${caseCoverUrl(caseStudy.coverPath)}`;
-  const relatedCases = profile.relatedSlugs
-    .map((relatedSlug) => caseStudies.find((item) => item.slug === relatedSlug))
-    .filter((item): item is CaseStudy => item !== undefined && item.id !== caseStudy.id);
-  const fallbackRelatedCases = caseStudies.filter((item) => item.id !== caseStudy.id && item.category === caseStudy.category).slice(0, 3);
-  const visibleRelatedCases = relatedCases.length > 0 ? relatedCases : fallbackRelatedCases;
+  const visibleRelatedCases = caseStudies.filter((item) => item.id !== caseStudy.id && item.category === caseStudy.category).slice(0, 3);
+  const facts = [
+    caseStudy.client?.trim() ? { label: "合作方 / 主题", value: caseStudy.client.trim() } : null,
+    caseStudy.region?.trim() ? { label: "项目地区", value: caseStudy.region.trim() } : null,
+    caseStudy.deliverable?.trim() ? { label: "交付内容", value: caseStudy.deliverable.trim() } : null,
+    { label: "站内视频", value: `${caseStudy.episodes.length} 条，可在线预览` },
+  ].filter((item): item is { label: string; value: string } => item !== null);
 
   return (
     <div className="case-detail-page">
       <JsonLd data={breadcrumbJsonLd([{ name: "首页", url: "/" }, { name: "案例作品", url: "/cases" }, { name: caseStudy.title, url: canonical }])} />
-      <JsonLd data={videoObjectJsonLd({ caseStudy, canonical, thumbnail: cover, description: profile.description, keywords: profile.keywords, sourceOrganization: profile.client })} />
-      <JsonLd data={faqPageJsonLd(profile.faq)} />
+      <JsonLd data={videoObjectJsonLd({ caseStudy, canonical, thumbnail: cover, description: profile.description, keywords: profile.keywords, sourceOrganization: caseStudy.client?.trim() || undefined })} />
+      {caseStudy.faq.length > 0 && <JsonLd data={faqPageJsonLd(caseStudy.faq)} />}
       <Link href="/cases" className="case-detail-back"><ArrowLeft size={16} /> 返回案例列表</Link>
       <div className="case-detail-layout">
         <div className="case-detail-info">
           <span className="eyebrow">PROJECT</span>
           <h1>{caseStudy.title}</h1>
           <span className="case-detail-category">{caseStudy.category}</span>
-          <p className="case-detail-summary">{profile.description}</p>
+          <p className="case-detail-summary">{caseStudy.detailIntro?.trim() || caseStudy.summary}</p>
           <dl className="case-detail-facts">
-            <div><dt>合作方 / 主题</dt><dd>{profile.client}</dd></div>
-            <div><dt>项目地区</dt><dd>{profile.region}</dd></div>
-            <div><dt>交付内容</dt><dd>{profile.deliverable}</dd></div>
-            <div><dt>站内视频</dt><dd>{caseStudy.episodes.length} 条，可在线预览</dd></div>
+            {facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
           </dl>
           <article className="case-detail-body">
-            <h2>项目概览</h2>
-            <p>{profile.overview}</p>
-            <h2>创作说明</h2>
-            {caseStudy.detail.split(/\n\s*\n/).map((paragraph, index) => <p key={`${caseStudy.id}-detail-${index}`}>{paragraph}</p>)}
-            <h2>创作方法</h2>
-            <p>{profile.method}</p>
-            <h2>项目价值</h2>
-            <p>{profile.value}</p>
-            <section className="case-detail-faq" aria-labelledby="case-faq-title">
-              <h2 id="case-faq-title">常见问题</h2>
-              <dl>
-                {profile.faq.map((faq) => <div key={faq.question}><dt>{faq.question}</dt><dd>{faq.answer}</dd></div>)}
-              </dl>
-            </section>
+            {caseStudy.detail.trim() && (
+              <section>
+                <h2>创作说明</h2>
+                {caseStudy.detail.split(/\n\s*\n/).map((paragraph, index) => <p key={`${caseStudy.id}-detail-${index}`}>{paragraph}</p>)}
+              </section>
+            )}
+            {caseStudy.method?.trim() && <section><h2>创作方法</h2><p>{caseStudy.method}</p></section>}
+            {caseStudy.value?.trim() && <section><h2>项目价值</h2><p>{caseStudy.value}</p></section>}
+            {caseStudy.faq.length > 0 && (
+              <section className="case-detail-faq" aria-labelledby="case-faq-title">
+                <h2 id="case-faq-title">常见问题</h2>
+                <dl>
+                  {caseStudy.faq.map((faq, index) => <div key={`${caseStudy.id}-faq-${index}`}><dt>{faq.question}</dt><dd>{faq.answer}</dd></div>)}
+                </dl>
+              </section>
+            )}
             {visibleRelatedCases.length > 0 && (
               <section className="case-detail-related" aria-labelledby="case-related-title">
                 <h2 id="case-related-title">相关案例</h2>

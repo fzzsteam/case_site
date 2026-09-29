@@ -14,8 +14,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/about",
     "/edu",
     "/edu/talent",
-    "/edu/visual-lab",
-    "/edu/visual-lab/talent",
   ].map((path) => ({
     url: `${base}${path}`,
     lastModified: new Date(),
@@ -30,19 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly",
     priority: .7,
   }));
-  const talentPages: MetadataRoute.Sitemap = talents.flatMap((talent) => [
-    {
-      url: `${base}/edu/talent/${talent.id}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    },
-    {
-      url: `${base}/edu/visual-lab/talent/${talent.id}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    },
-  ]);
+  const talentPages: MetadataRoute.Sitemap = talents.map((talent) => ({
+    url: `${base}/edu/talent/${talent.id}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
   return [...staticPages, ...casePages, ...talentPages];
 }

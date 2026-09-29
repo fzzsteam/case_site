@@ -4,10 +4,10 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { cases, caseEpisodes } from "@/lib/db/schema";
 import { nextSlugCandidate, slugify } from "./slug";
-import type { CaseCategory, CaseStudy, VideoOrientation } from "./types";
+import type { CaseCategory, CaseFaq, CaseStudy, VideoOrientation } from "./types";
 
 export type EpisodeInput = { videoPath: string; orientation: VideoOrientation; durationSeconds?: number | null };
-export type CaseInput = { title: string; category: CaseCategory; summary: string; detail: string; coverPath: string; episodes: EpisodeInput[] };
+export type CaseInput = { title: string; category: CaseCategory; detailIntro?: string; client?: string; region?: string; deliverable?: string; summary: string; detail?: string; method?: string; value?: string; faq?: CaseFaq[]; coverPath: string; episodes: EpisodeInput[] };
 
 export async function listCases(): Promise<CaseStudy[]> {
   const rows = await getDb().query.cases.findMany({
@@ -55,18 +55,20 @@ export async function createCase(input: CaseInput): Promise<string> {
   const existing = await db.select({ sortOrder: cases.sortOrder }).from(cases).orderBy(asc(cases.sortOrder));
   const sortOrder = existing.length ? Math.max(...existing.map((item) => item.sortOrder)) + 1 : 0;
   await db.transaction(async (tx) => {
-    await tx.insert(cases).values({ id, slug, title: input.title, category: input.category, summary: input.summary, detail: input.detail, coverPath: input.coverPath, sortOrder });
+    await tx.insert(cases).values({ id, slug, title: input.title, category: input.category, detailIntro: input.detailIntro?.trim() || null, client: input.client?.trim() || null, region: input.region?.trim() || null, deliverable: input.deliverable?.trim() || null, summary: input.summary, detail: input.detail?.trim() ?? "", method: input.method?.trim() || null, value: input.value?.trim() || null, faq: input.faq === undefined ? null : JSON.stringify(input.faq), coverPath: input.coverPath, sortOrder });
     if (input.episodes.length) await tx.insert(caseEpisodes).values(input.episodes.map((episode, index) => ({ id: randomUUID(), caseId: id, videoPath: episode.videoPath, orientation: episode.orientation, durationSeconds: episode.durationSeconds ?? null, sortOrder: index })));
   });
   return id;
 }
 
-export async function updateCase(id: string, input: CaseInput): Promise<void> {
+export async function updateCase(id: string, input: Partial<CaseInput>): Promise<void> {
   const db = getDb();
   await db.transaction(async (tx) => {
-    await tx.update(cases).set({ title: input.title, category: input.category, summary: input.summary, detail: input.detail, coverPath: input.coverPath }).where(eq(cases.id, id));
-    await tx.delete(caseEpisodes).where(eq(caseEpisodes.caseId, id));
-    if (input.episodes.length) await tx.insert(caseEpisodes).values(input.episodes.map((episode, index) => ({ id: randomUUID(), caseId: id, videoPath: episode.videoPath, orientation: episode.orientation, durationSeconds: episode.durationSeconds ?? null, sortOrder: index })));
+    await tx.update(cases).set({ title: input.title, category: input.category, detailIntro: input.detailIntro?.trim(), client: input.client?.trim(), region: input.region?.trim(), deliverable: input.deliverable?.trim(), summary: input.summary, detail: input.detail?.trim(), method: input.method?.trim(), value: input.value?.trim(), faq: input.faq === undefined ? undefined : JSON.stringify(input.faq), coverPath: input.coverPath }).where(eq(cases.id, id));
+    if (input.episodes !== undefined) {
+      await tx.delete(caseEpisodes).where(eq(caseEpisodes.caseId, id));
+      if (input.episodes.length) await tx.insert(caseEpisodes).values(input.episodes.map((episode, index) => ({ id: randomUUID(), caseId: id, videoPath: episode.videoPath, orientation: episode.orientation, durationSeconds: episode.durationSeconds ?? null, sortOrder: index })));
+    }
   });
 }
 
@@ -81,16 +83,40 @@ export async function reorderCases(orderedIds: string[]): Promise<void> {
   });
 }
 
-function toCaseStudy(row: { id: string; slug: string; title: string; category: string; summary: string; detail: string; coverPath: string; createdAt: Date; episodes: { id: string; videoPath: string; orientation: string; durationSeconds: number | null }[] }): CaseStudy {
+function toCaseStudy(row: { id: string; slug: string; title: string; category: string; detailIntro: string | null; client: string | null; region: string | null; deliverable: string | null; summary: string; detail: string; method: string | null; value: string | null; faq: string | null; coverPath: string; createdAt: Date; episodes: { id: string; videoPath: string; orientation: string; durationSeconds: number | null }[] }): CaseStudy {
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     category: row.category as CaseCategory,
+    detailIntro: row.detailIntro,
+    client: row.client,
+    region: row.region,
+    deliverable: row.deliverable,
     summary: row.summary,
     detail: row.detail,
+    method: row.method,
+    value: row.value,
+    faq: parseFaq(row.faq),
     coverPath: row.coverPath,
     createdAt: row.createdAt,
     episodes: row.episodes.map((episode) => ({ id: episode.id, videoPath: episode.videoPath, orientation: episode.orientation as VideoOrientation, durationSeconds: episode.durationSeconds })),
   };
+}
+
+function parseFaq(value: string | null): CaseFaq[] {
+  if (!value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isCaseFaq);
+  } catch {
+    return [];
+  }
+}
+
+function isCaseFaq(value: unknown): value is CaseFaq {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.question === "string" && typeof item.answer === "string";
 }

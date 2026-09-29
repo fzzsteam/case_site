@@ -64,6 +64,20 @@
       "when": 1787931391695,
       "tag": "0008_serious_bushwacker",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1790581150271,
+      "tag": "0009_mcp_token_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1790590941818,
+      "tag": "0010_case_optional_presentation",
+      "breakpoints": true
     }
   ]
 }

@@ -400,8 +400,9 @@ body{font-family:var(--font-sans),"PingFang SC",sans-serif}.brand,.hero-copy h1,
 .case-detail-facts dd{margin:0;color:var(--text);font-size:13px;line-height:1.7}
 .case-detail-body{white-space:normal}
 .case-detail-body h2{font-family:var(--font-serif),"Songti SC",serif;font-size:22px;font-weight:500;color:var(--ink);margin:30px 0 10px}
-.case-detail-body h2:first-child{margin-top:0}
+.case-detail-body>section:first-child h2{margin-top:0}
 .case-detail-body p{margin:0 0 16px}
+.case-detail-body>section+section{margin-top:26px}
 .case-detail-faq{margin-top:36px;padding-top:8px;border-top:1px solid #b8955138}
 .case-detail-faq dl{margin:0}
 .case-detail-faq dl>div{padding:13px 0;border-bottom:1px solid #b8955124}

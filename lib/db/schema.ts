@@ -10,11 +10,12 @@ export const adminCredentials = mysqlTable("admin_credentials", {
 });
 
 // MCP 服务的访问凭证。token 按产品决策以明文存储，后台可随时查看复制；
-// 因此这张表的读取权限等价于公众号发布权限，不要在日志或接口响应里外泄。
+// 因此这张表的读取权限等价于权限字段授予的全部操作权限，不要在日志或未授权接口响应里外泄。
 export const mcpTokens = mysqlTable("mcp_tokens", {
   id: char("id", { length: 36 }).primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
   token: varchar("token", { length: 100 }).notNull().unique(),
+  permissions: text("permissions").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at"),
 });
@@ -40,8 +41,15 @@ export const cases = mysqlTable("cases", {
   title: varchar("title", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   category: varchar("category", { length: 50 }).notNull(),
+  detailIntro: text("detail_intro"),
+  client: varchar("client", { length: 255 }),
+  region: varchar("region", { length: 255 }),
+  deliverable: varchar("deliverable", { length: 255 }),
   summary: text("summary").notNull(),
   detail: text("detail").notNull(),
+  method: text("method"),
+  value: text("value"),
+  faq: text("faq"),
   coverPath: varchar("cover_path", { length: 500 }).notNull(),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Check, Pencil, Plus, Tags, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import type { Category } from "@/lib/cases/types";
 import { useToast } from "./toast";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -12,13 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function CategoryManager() {
   const { showToast } = useToast();
   const [categories, setCategories] = useState<Category[] | null>(null);
-  const [newName, setNewName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [formMode, setFormMode] = useState<{ type: "create" } | { type: "edit"; category: Category } | null>(null);
+  const [formName, setFormName] = useState("");
+  const [savingForm, setSavingForm] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -27,46 +26,54 @@ export function CategoryManager() {
       .catch(() => showToast("error", "加载分类列表失败"));
   }, [showToast]);
 
-  async function handleCreate(event: React.FormEvent) {
-    event.preventDefault();
-    const name = newName.trim();
-    if (!name) return;
-    setCreating(true);
-    try {
-      const response = await fetch("/api/admin/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-      if (response.status === 409) { showToast("error", "该分类已存在"); return; }
-      if (!response.ok) throw new Error();
-      const { category } = (await response.json()) as { category: Category };
-      setCategories((current) => (current ? [...current, category] : [category]));
-      setNewName("");
-      showToast("success", "分类已创建");
-    } catch {
-      showToast("error", "创建失败，请重试");
-    } finally {
-      setCreating(false);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (formMode && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector<HTMLInputElement>("input")?.focus();
     }
+    if (!formMode && dialog.open) dialog.close();
+  }, [formMode]);
+
+  function openCreateDialog() {
+    setFormName("");
+    setFormMode({ type: "create" });
   }
 
-  function startEdit(category: Category) {
-    setEditingId(category.id);
-    setEditingName(category.name);
+  function openEditDialog(category: Category) {
+    setFormName(category.name);
+    setFormMode({ type: "edit", category });
   }
 
-  async function handleRename(id: string) {
-    const name = editingName.trim();
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+    if (!formMode) return;
+    const mode = formMode;
+    const name = formName.trim();
     if (!name) return;
-    setSavingEdit(true);
+    setSavingForm(true);
     try {
-      const response = await fetch(`/api/admin/categories/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-      if (response.status === 409) { showToast("error", "该分类名称已存在"); return; }
-      if (!response.ok) throw new Error();
-      setCategories((current) => (current ? current.map((item) => (item.id === id ? { ...item, name } : item)) : current));
-      setEditingId(null);
-      showToast("success", "分类已更新");
+      if (mode.type === "create") {
+        const response = await fetch("/api/admin/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+        if (response.status === 409) { showToast("error", "该分类已存在"); return; }
+        if (!response.ok) throw new Error();
+        const { category } = (await response.json()) as { category: Category };
+        setCategories((current) => (current ? [...current, category] : [category]));
+        showToast("success", "分类已创建");
+      } else {
+        const { category } = mode;
+        const response = await fetch(`/api/admin/categories/${category.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+        if (response.status === 409) { showToast("error", "该分类名称已存在"); return; }
+        if (!response.ok) throw new Error();
+        setCategories((current) => (current ? current.map((item) => (item.id === category.id ? { ...item, name } : item)) : current));
+        showToast("success", "分类已更新");
+      }
+      setFormMode(null);
     } catch {
-      showToast("error", "更新失败，请重试");
+      showToast("error", mode.type === "create" ? "创建失败，请重试" : "更新失败，请重试");
     } finally {
-      setSavingEdit(false);
+      setSavingForm(false);
     }
   }
 
@@ -94,13 +101,12 @@ export function CategoryManager() {
         <p className="mt-1 text-sm text-muted-foreground">维护案例分类，删除前需先清空该分类下的案例</p>
       </div>
 
-      <form onSubmit={handleCreate} className="mb-4 flex gap-2">
-        <Input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="新分类名称" className="max-w-xs" maxLength={50} />
-        <Button type="submit" disabled={creating || !newName.trim()}>
+      <div className="mb-4">
+        <Button type="button" onClick={openCreateDialog}>
           <Plus size={16} />
-          添加分类
+          新增分类
         </Button>
-      </form>
+      </div>
 
       {categories === null && (
         <Card className="divide-y divide-border">
@@ -125,38 +131,43 @@ export function CategoryManager() {
         <Card className="divide-y divide-border overflow-hidden">
           {categories.map((category) => (
             <div key={category.id} className="flex items-center gap-3 px-4 py-3">
-              {editingId === category.id ? (
-                <>
-                  <Input
-                    autoFocus
-                    value={editingName}
-                    onChange={(event) => setEditingName(event.target.value)}
-                    maxLength={50}
-                    className="h-9 max-w-xs"
-                    onKeyDown={(event) => { if (event.key === "Enter") handleRename(category.id); if (event.key === "Escape") setEditingId(null); }}
-                  />
-                  <Button variant="ghost" size="icon-sm" aria-label="保存" disabled={savingEdit} onClick={() => handleRename(category.id)}>
-                    <Check size={15} />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="取消编辑" onClick={() => setEditingId(null)}>
-                    <X size={15} />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-1 text-sm font-medium text-foreground">{category.name}</span>
-                  <Button variant="ghost" size="icon-sm" aria-label={`重命名${category.name}`} onClick={() => startEdit(category)}>
-                    <Pencil size={15} />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label={`删除${category.name}`} onClick={() => setPendingDelete(category)}>
-                    <Trash2 size={15} />
-                  </Button>
-                </>
-              )}
+              <span className="flex-1 text-sm font-medium text-foreground">{category.name}</span>
+              <Button variant="ghost" size="icon-sm" aria-label={`重命名${category.name}`} onClick={() => openEditDialog(category)}>
+                <Pencil size={15} />
+              </Button>
+              <Button variant="ghost" size="icon-sm" aria-label={`删除${category.name}`} onClick={() => setPendingDelete(category)}>
+                <Trash2 size={15} />
+              </Button>
             </div>
           ))}
         </Card>
       )}
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="category-form-dialog-title"
+        onCancel={(event) => { event.preventDefault(); if (!savingForm) setFormMode(null); }}
+        onClose={() => setFormMode(null)}
+        className="m-auto w-[90vw] max-w-md rounded-xl border border-border bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+      >
+        <form onSubmit={handleSave}>
+          <div className="border-b border-border px-6 py-4">
+            <h2 id="category-form-dialog-title" className="text-base font-semibold text-foreground">
+              {formMode?.type === "edit" ? "重命名分类" : "新增分类"}
+            </h2>
+          </div>
+          <div className="space-y-2 px-6 py-5">
+            <label htmlFor="category-name" className="text-sm font-medium text-foreground">分类名称</label>
+            <Input id="category-name" value={formName} onChange={(event) => setFormName(event.target.value)} maxLength={50} placeholder="输入分类名称" />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+            <Button type="button" variant="secondary" onClick={() => setFormMode(null)} disabled={savingForm}>取消</Button>
+            <Button type="submit" disabled={savingForm || !formName.trim()}>
+              {savingForm ? "保存中…" : "保存"}
+            </Button>
+          </div>
+        </form>
+      </dialog>
 
       <ConfirmDialog
         open={pendingDelete !== null}

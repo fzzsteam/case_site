@@ -39,7 +39,7 @@ export async function GET() {
     ...(caseStudies.length
       ? caseStudies.flatMap((item) => {
           const profile = getCaseSeoProfile(item);
-          return [`- [${item.title}](${absoluteSiteUrl(`/cases/${item.slug}`, siteConfig.url)})（${item.category}）：${profile.description}`, `  - 项目说明：${oneLine(profile.overview)}`];
+          return [`- [${item.title}](${absoluteSiteUrl(`/cases/${item.slug}`, siteConfig.url)})（${item.category}）：${profile.description}`, `  - 项目说明：${oneLine(item.detailIntro?.trim() || item.summary)}`];
         })
       : ["- 案例目录暂时无法读取，请访问官网的案例列表页。"]),
     "",
