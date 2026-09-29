@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     description: "31 天线下 AIGC 影视内容实训，从创意到交付完成真实商业作品。",
     images: [aigcImageUrl(AIGC_MEDIA.heroPosterPath)],
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function AigcLayout({ children }: { children: React.ReactNode }) {
