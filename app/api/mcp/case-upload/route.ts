@@ -1,4 +1,5 @@
 import { Readable, Transform } from "node:stream";
+import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { verifyCaseUploadUrl } from "@/lib/mcp/case-upload-signature";
 import { getOssClient } from "@/lib/oss/client";
 
@@ -20,7 +21,7 @@ export async function PUT(request: Request) {
     return Response.json({ error: "文件内容为空或长度无效。" }, { status: 400 });
   }
 
-  const source = Readable.fromWeb(request.body as ReadableStream<Uint8Array>);
+  const source = Readable.fromWeb(request.body as unknown as NodeReadableStream<Uint8Array>);
   let uploadedBytes = 0;
   const countingStream = new Transform({
     transform(chunk: Uint8Array, _encoding, callback) {
