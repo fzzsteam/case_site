@@ -36,8 +36,9 @@ it("loads and displays categories", async () => {
 it("creates a new category", async () => {
   renderManager();
   await screen.findByText("宣传片");
-  fireEvent.change(screen.getByPlaceholderText("新分类名称"), { target: { value: "纪录片" } });
-  fireEvent.click(screen.getByRole("button", { name: "添加分类" }));
+  fireEvent.click(screen.getByRole("button", { name: "新增分类" }));
+  fireEvent.change(screen.getByPlaceholderText("输入分类名称"), { target: { value: "纪录片" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存" }));
   expect(await screen.findByText("纪录片")).toBeInTheDocument();
 });
 

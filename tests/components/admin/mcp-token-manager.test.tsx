@@ -3,7 +3,11 @@ import { McpTokenManager } from "@/components/admin/mcp-token-manager";
 import { ToastProvider } from "@/components/admin/toast";
 
 const FULL_TOKEN = "mcpat_abcdefghijklmnopqrstuvwxyz0123456789";
-const sampleTokens = [{ id: "t1", name: "我的笔记本", token: FULL_TOKEN, createdAt: "2026-08-01T02:00:00.000Z", lastUsedAt: null }];
+const samplePermissionGroups = [
+  { id: "wechat", name: "公众号管理", permissions: [{ id: "wechat_list", name: "查询公众号", description: "查询公众号内容。" }] },
+  { id: "cases", name: "案例管理", permissions: [{ id: "cases_list", name: "查询案例列表", description: "查看已创建案例及排序。" }] },
+];
+const sampleTokens = [{ id: "t1", name: "我的笔记本", token: FULL_TOKEN, permissions: ["wechat.*"], createdAt: "2026-08-01T02:00:00.000Z", lastUsedAt: null }];
 
 const writeText = vi.fn(async () => {});
 
@@ -15,10 +19,10 @@ beforeEach(() => {
   writeText.mockClear();
   Object.assign(navigator, { clipboard: { writeText } });
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
-    if (url === "/api/admin/mcp-tokens" && (!init || init.method === undefined)) return { ok: true, json: async () => ({ tokens: sampleTokens }) };
+    if (url === "/api/admin/mcp-tokens" && (!init || init.method === undefined)) return { ok: true, json: async () => ({ tokens: sampleTokens, permissionGroups: samplePermissionGroups }) };
     if (url === "/api/admin/mcp-tokens" && init?.method === "POST") {
       const body = JSON.parse(init.body as string);
-      return { ok: true, status: 201, json: async () => ({ token: { id: "t2", name: body.name, token: "mcpat_newtoken0123456789", createdAt: "2026-08-06T02:00:00.000Z", lastUsedAt: null } }) };
+      return { ok: true, status: 201, json: async () => ({ token: { id: "t2", name: body.name, token: "mcpat_newtoken0123456789", permissions: body.permissions, createdAt: "2026-08-06T02:00:00.000Z", lastUsedAt: null } }) };
     }
     if (url === "/api/admin/mcp-tokens/t1" && init?.method === "DELETE") return { ok: true, status: 200, json: async () => ({ ok: true }) };
     return { ok: false, status: 500, json: async () => ({ error: "unexpected" }) };
@@ -59,7 +63,7 @@ describe("接入指南弹窗", () => {
   it("默认展示 Claude Code 的接入命令，地址和凭证已填好", async () => {
     await openGuide();
 
-    const code = await screen.findByText(/claude mcp add --transport http wechat/, { selector: "pre" });
+    const code = await screen.findByText(/claude mcp add --transport http fzzs-mcp/, { selector: "pre" });
     expect(code.textContent).toContain("/api/mcp");
     expect(code.textContent).toContain(`Authorization: Bearer ${FULL_TOKEN}`);
   });
@@ -118,8 +122,10 @@ it("新建的 token 立即展开，方便当场复制", async () => {
   renderManager();
   await screen.findByText("我的笔记本");
 
-  fireEvent.change(screen.getByPlaceholderText("用途备注，如「我的笔记本」"), { target: { value: "台式机" } });
   fireEvent.click(screen.getByRole("button", { name: "新建 Token" }));
+  fireEvent.change(screen.getByPlaceholderText("如：我的笔记本"), { target: { value: "台式机" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: /案例管理/ }));
+  fireEvent.click(screen.getByRole("button", { name: "创建 Token" }));
 
   expect(await screen.findByText("台式机")).toBeInTheDocument();
   expect(screen.getByText("mcpat_newtoken0123456789")).toBeInTheDocument();

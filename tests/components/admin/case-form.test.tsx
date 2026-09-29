@@ -48,7 +48,7 @@ it("blocks submit and shows errors when required fields are missing", async () =
   fireEvent.click(screen.getByRole("button", { name: "保存" }));
   expect(await screen.findByText("请填写标题")).toBeInTheDocument();
   expect(screen.getByText("请填写简介")).toBeInTheDocument();
-  expect(screen.getByText("请填写详情正文")).toBeInTheDocument();
+  expect(screen.queryByText("请填写详情正文")).not.toBeInTheDocument();
   expect(screen.getByText("请上传封面图片")).toBeInTheDocument();
   expect(screen.getByText("请至少上传一个视频")).toBeInTheDocument();
 });
@@ -61,8 +61,8 @@ it("uploads a cover and a video then submits a new case", async () => {
   renderForm();
   await waitFor(() => expect(screen.getByRole("combobox")).toHaveTextContent("宣传片"));
   fireEvent.change(screen.getByLabelText("标题"), { target: { value: "新案例" } });
-  fireEvent.change(screen.getByLabelText("简介"), { target: { value: "这是简介" } });
-  fireEvent.change(screen.getByLabelText("详情正文"), { target: { value: "这是详情正文" } });
+  fireEvent.change(screen.getByLabelText("简介（列表展示）"), { target: { value: "这是简介" } });
+  fireEvent.change(screen.getByLabelText("创作说明 选填"), { target: { value: "这是详情正文" } });
 
   const [videoInput, coverInput] = document.querySelectorAll('input[type="file"]');
   fireEvent.change(coverInput, { target: { files: [imageFile("cover.png")] } });
@@ -80,7 +80,14 @@ it("uploads a cover and a video then submits a new case", async () => {
     title: "新案例",
     category: "宣传片",
     summary: "这是简介",
+    detailIntro: "",
+    client: "",
+    region: "",
+    deliverable: "",
     detail: "这是详情正文",
+    method: "",
+    value: "",
+    faq: [],
     coverPath: "case-site/cases/uploads/cover.png",
     episodes: [{ videoPath: "case-site/cases/uploads/video.mp4", orientation: "landscape", durationSeconds: 92 }],
   });
@@ -93,8 +100,15 @@ it("prefills fields in edit mode and PATCHes the existing case id", async () => 
     slug: "jiu-an-li",
     title: "旧案例",
     category: "短剧",
+    detailIntro: null,
+    client: null,
+    region: null,
+    deliverable: null,
     summary: "旧简介",
     detail: "旧详情正文",
+    method: null,
+    value: null,
+    faq: [],
     coverPath: "case-site/cases/uploads/old-cover.png",
     createdAt: new Date("2026-01-01"),
     episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait", durationSeconds: 45 }],
@@ -103,8 +117,8 @@ it("prefills fields in edit mode and PATCHes the existing case id", async () => 
 
   renderForm(existing);
   expect(screen.getByLabelText("标题")).toHaveValue("旧案例");
-  expect(screen.getByLabelText("简介")).toHaveValue("旧简介");
-  expect(screen.getByLabelText("详情正文")).toHaveValue("旧详情正文");
+  expect(screen.getByLabelText("简介（列表展示）")).toHaveValue("旧简介");
+  expect(screen.getByLabelText("创作说明 选填")).toHaveValue("旧详情正文");
   expect(screen.getByText("old-video.mp4")).toBeInTheDocument();
   expect(screen.getByText("竖屏")).toBeInTheDocument();
 
@@ -118,8 +132,15 @@ it("removes an episode from the list", async () => {
     slug: "jiu-an-li",
     title: "旧案例",
     category: "短剧",
+    detailIntro: null,
+    client: null,
+    region: null,
+    deliverable: null,
     summary: "旧简介",
     detail: "旧详情正文",
+    method: null,
+    value: null,
+    faq: [],
     coverPath: "case-site/cases/uploads/old-cover.png",
     createdAt: new Date("2026-01-01"),
     episodes: [{ id: "ep-1", videoPath: "case-site/cases/uploads/old-video.mp4", orientation: "portrait", durationSeconds: 45 }],
